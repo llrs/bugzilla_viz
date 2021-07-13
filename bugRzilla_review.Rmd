@@ -1,73 +1,105 @@
 ---
-title: "bugRzilla review"
+title: "R bugzilla review"
 author: "Piyush Kumar"
-date: "04/07/2021"
-output: html_document
-runtime: shiny
+advisors: "Lluís Revilla, Heather Turner"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    theme: lumen
 ---
 
 ```{r setup, include=FALSE}
+# loading packages
+library(dplyr)
+library(dbplyr)
+library(RMySQL)
+library(DBI)
+library(tibble)
+library(DT)
+library(tidyverse)
+library(lubridate)
+
+# connecting MySQL with R
+con <- dbConnect(
+    MySQL(), 
+    dbname='bugRzilla', # change the database name to your database name
+    username='root', # change the username to your username
+    password='1204', # update your password
+    host='localhost',
+    port=3306)
+
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(connection = "con")
 ```
 
 <style>
 body {
-text-align: justify}
+    text-align: justify;
+}
 </style>
 
-> # What is bugRzilla?
+# R_bugzilla
 
-<font size="4">The project bugRzilla is an issue tracker for the R-core members. The motive to develop this project as many issues came under the Resolution section i.e. not properly documented, reported, spam, and so on. So to find efficiency, issues can be tracked down without much effort which can increase the production rate of R-Core members for solving high-quality issues like whose Severity is major, critical, and new contributors who want to contribute can start either with less Priority and Severity i.e. minor, normal. 
+<font size="4">
+The project bugRzilla is an issue tracker for the R-core members. The motive to develop this project as many issues came under the Resolution section i.e. not properly documented, reported, spam, and so on. So to find efficiency, issues can be tracked down without much effort which can increase the production rate of R-Core members for solving high-quality issues like whose Severity is major, critical, and new contributors who want to contribute can start either with less Priority and Severity i.e. minor, normal. 
 </font>
 
 <font size="3">To learn more, see [bugRzilla](https://github.com/llrs/bugRzilla).</font>
 
-> # Download SQL Data and dumping Data in the SQL Workbench.
+# Setup Database on your local system
 
-```
+### Download R_bugzilla data 
 
-```
+<font size ="4">
+The R_bugzilla data can be downloaded from  [link](https://bugs.r-project.org/db/R-bugs.sql.xz)
+</font>
 
+### Download SQL and MySQL Workbench
 
-> # Connect bugRzilla SQL Database with R
+<font size="4">
+To install SQL on Ubuntu one can refer a blog post by [digitalocean](https://www.digitalocean.com/community/tutorials/how-to-install-mysql-on-ubuntu-20-04).
+To install MySQL workbench on Ubuntu one can refer a blog post by [linuxhint](https://linuxhint.com/installing_mysql_workbench_ubuntu/)
+</font>
+
+### Dump downloaded R_bugzilla to MySQL workbench.
+
+<font size="4">
+Before one import the R_bugzilla SQL file one may need to create the (empty) database from MySQL if it doesn't exist already and the exported SQL don't contain CREATE DATABASE (exported with --no-create-db or -n option), before you can import it.
+
+After considering this open your Terminal and run the command: mysql -u username -p database_name < file.sql
+</font>
+
+# Connect bugRzilla SQL Database with R
 
 <font size="4">
 To connect bugRzilla SQL Database with R, I've used `dplyr package`, this will allow to interact with our data in the form of quarries.
 </font>
 
-```{r, warning = FALSE}
-# loading packages
-library(dplyr)
-library(ggplot2)
-library(dbplyr)
-library(DBI)
-library(tidyverse)
-library(lubridate)
-library(tibble)
-```
-```{r, warning = FALSE}
-# connecting MySQL with R
-con <- dbConnect(
-    RMySQL::MySQL(), 
-    dbname='bugRzilla',
-    username='root',
-    password='1204',
-    host='localhost',
-    port=3306)
+
+```{r}
 #  Accessing Tables names from the Database
 src_dbi(con)
 ```
 
-> # "bugs" table from the SQL Database
+# "bugs" table 
 
 ```{r, warning = FALSE}
 # View the "bugs" tables from the bugRzilla database
 bugs_db <- tbl(con, "bugs")
-bugs_db %>%
-    select(everything())
+bugs_data <- bugs_db %>%
+    select(everything()) 
+
+datatable(as.data.frame(bugs_data), options = list(scrollY = "645px"), 
+          class = "display", fillContainer = T, width = NULL, 
+          height = NULL, style = "default", editable = FALSE)
+
 ```
 
-### Data Wrangling on the "bugs" Table
+## Data Wrangling on the "bugs" Table
+
 ```{r, warning = FALSE}
 bugs <- bugs_db %>%
     mutate_all(as.character) %>%  # converting all columns data types to "char"
@@ -78,7 +110,7 @@ bugs <- bugs_db %>%
                              "priority", "rep_platform", "bug_file_loc", 
                              "lastdiffed", "op_sys", "version", 
                              "resolution", "target_milestone", "creation_ts", 
-                             "delta_ts", "status_whiteboard"))), as.integer) %>%
+                             "delta_ts", "status_whiteboard", "deadline"))), as.integer) %>%
     # converting all columns data types to "Date" leaving the "char" and "int" datatype
     mutate_at(vars(-one_of(c("bug_severity", "bug_status", "short_desc",
                           "bug_file_loc", "priority", "rep_platform", 
@@ -90,19 +122,33 @@ bugs <- bugs_db %>%
                           "cclist_accessible", "estimated_time",
                           "remaining_time"))), as.Date)
 
-head(bugs)
+# removing null or empty columns
+bugs <- bugs %>%
+    select(-c("target_milestone", "qa_contact", "status_whiteboard",
+              "remaining_time", "remaining_time",  "estimated_time"))
+
+bugs <- bugs %>%
+    select(everything())
+datatable(as.data.frame(bugs), options = list(scrollY = "645px"), 
+          class = "display", fillContainer = T, width = NULL, 
+          height = NULL, style = "default", editable = FALSE)
+
 ```
 
-> #"attachments" table from the SQL Database
+# "attachments" table
 
 ```{r, warning = FALSE}
 # View the "attachments" Table from the database
 attachments_db <- tbl(con, "attachments")
-attachments_db %>%
+attachments_data <- attachments_db %>%
     select(everything())
+
+datatable(as.data.frame(attachments_data), options = list(scrollY = "565px"), 
+          class = "display", fillContainer = T, width = NULL, 
+          height =NULL, style = "default", editable = FALSE) 
 ```
 
-### Data Wrangling on "attachments" Table 
+## Data Wrangling on "attachments" Table 
 ```{r, warning = FALSE}
 # Data Wrangling
 attach_df <- attachments_db %>%
@@ -113,19 +159,30 @@ attach_df <- attachments_db %>%
                              "ispatch", "filename", "submitter_id", 
                              "isobsolete", "isprivate"))), as.Date)
 
-head(attach_df)
+attach_df <- attach_df %>%
+    select(-c("isprivate"))
+attach_df <- attach_df %>%
+    select(everything())
+
+datatable(as.data.frame(attach_df), options = list(scrollY = "565px"), 
+          class = "display", fillContainer = T, width = NULL, 
+          height = NULL, style = "default", editable = FALSE)
 ```
 
-> #"bugs_activity" table from the SQL Database
+# "bugs_activity" table
 
 ```{r, warning = FALSE}
 # View the "bugs_activity" Table from the database
 bugs_activity_db <- tbl(con, "bugs_activity")
-bugs_activity_db %>%
+bugs_activity_data <- bugs_activity_db %>%
     select(everything())
+
+datatable(as.data.frame(bugs_activity_data), options = list(scrollY = "543px"), 
+          class = "display", fillContainer = T, width = NULL, 
+          height = NULL, style = "default", editable = FALSE) 
 ```
 
-### Data Wrangling on "bugs_activity" Table 
+## Data Wrangling on "bugs_activity" Table 
 ```{r, warning = FALSE}
 # Data Wrangling
 bugs_act <- bugs_activity_db %>%
@@ -133,5 +190,9 @@ bugs_act <- bugs_activity_db %>%
     na_if("") %>% #replace empty strings with NA
     mutate_at(vars(-one_of(c("attach_id", "bug_id", "who", "fieldid", "added", "comment_id", "removed", "id"))), as.Date)
 
-head(bugs_act)
+bugs_act <- bugs_act %>%
+    select(everything())
+datatable(as.data.frame(bugs_act), options = list(scrollY = "543px"), 
+          class = "display", fillContainer = T, width = NULL, 
+          height = NULL, style = "default", editable = FALSE)
 ```
