@@ -1,4 +1,8 @@
-- name: HTML Preview
-  uses: pavi2410/html-preview-action@v2
-  with:
-    html_file: 'bugRzilla_review.html'
+name: preview
+jobs:
+    preview:
+        steps:
+            - name: HTML Preview
+            uses: pavi2410/html-preview-action@v2
+            with:
+                html_file: 'bugRzilla_review.html'
