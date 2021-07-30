@@ -1,3 +1,5 @@
+on: [pull_request]
+
 name: preview
 jobs:
     preview:
