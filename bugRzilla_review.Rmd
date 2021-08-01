@@ -30,9 +30,9 @@ BugRzilla is an R package that helps the user to interact with the **Bugzilla** 
 
 <font size="3">To learn more, see [bugRzilla](https://github.com/llrs/bugRzilla).</font>
 
-## About the BugRzilla Google Summer of COde Project:-
+## About the bugRzilla Google Summer of COde Project:-
 
-The project bugRzilla is an issue tracker for the R-core members. The goal of the project is to help users to submit issues to R Bugzilla.
+bugRzilla is a package to interact with a bugzilla API and specially with R bugzilla. The goal of the project is to help users to submit issues to R Bugzilla.
 
 ## About the This Project:-
 
@@ -58,7 +58,7 @@ To install MySQL workbench on Ubuntu one can refer a blog post by [linuxhint](ht
 The R_bugzilla data can be downloaded from  [link](https://bugs.r-project.org/db/R-bugs.sql.xz).
 </li>
 <li>
-Since the downloaded data is a zip file so make sure you unzip the file before dumping the file
+Since the downloaded data is a zip file so make sure you unzip the file by directly using `extract here` option to the folder you desire before dumping the file
 which will have an extension `.sql` (eg: R-bugs.sql).
 </li>
 </ol>
@@ -67,10 +67,12 @@ which will have an extension `.sql` (eg: R-bugs.sql).
 ## Dump downloaded R_bugzilla to MySQL workbench.
 
 <font size="4">
-Before one import the R_bugzilla SQL file one may need to create the (empty) database from MySQL if it doesn't exist already and the exported SQL don't contain CREATE DATABASE (exported with --no-create-db or -n option), before you can import it.
+Before one import the R_bugzilla SQL file one needs to create the (empty) database from MySQL if it doesn't exist already and the exported SQL don't contain CREATE DATABASE (exported with --no-create-db or -n option), before you can import it.
 
 
 After considering this open your Terminal and run the command: `mysqldump -u my_username -p database_name > output_file_path`
+or you can use mysql using the command: `source <Path>/R-bugs.sql;`
+
 
 The options in use are:
 <ol>
@@ -79,11 +81,56 @@ The options in use are:
     </li>
     <li>
         The `-p` flag indicates we should be prompted for the `password` associated with the above username.
-    `database_name` is of course the exact name of the database to export.
+    `database_name` is of course the exact name of the database to export. eg. `bugRzilla` is the empty database you created.
     </li>
     <li>
         The `>` symbol is a Unix directive for `STDOUT`, which allows Unix commands to output the text results of the issued command to another location. In this case, that output location is a file path, specified by `output_file_path`.
     </li>
+</ol>
+
+For Example,
+<ol>
+    <li>
+        At the command prompt, run the following command to launch the mysql shell and enter it as the root user:
+        `mysql -u root -p`
+    </li>
+    <li>
+        When you’re prompted for a password, enter the one that you set at installation time, or if you haven’t set one, press Enter to submit no password.
+        The following mysql shell prompt should appear:
+        `mysql>`
+    </li>
+    <li>
+        In MySQL, I used this to dump the data in the empty database: 
+        <ul>
+            <li>
+                Create an empty database: `create database bugRzilla;`
+            </li>
+            <li>
+                To check wheather the database is created or not use: `show databases;`
+            </li>
+            <li>
+                Once an empty database is created then to dump the SQL data in the database use: `source /home/data/Documents/GSOC/R-bugs.sql;`
+            </li>
+            <li>
+                To check your database is dumped correctly use: `show tables;`
+```{r, eval=F}
+mysql> show tables;
++---------------------+
+| Tables_in_bugRzilla |
++---------------------+
+| attachments         |
+| bugs                |
+| bugs_activity       |
+| bugs_fulltext       |
+| bugs_mod            |
+| components          |
+| longdescs           |
++---------------------+
+7 rows in set (0.00 sec)
+```
+</li>
+</ul>
+</li>
 </ol>
 </font>
 
@@ -103,6 +150,7 @@ library(RMySQL)
 library(DBI)
 library(DT)
 library(tidyverse)
+library(skimr)
 library(ggplot2)
 library(plotly)
 ```
@@ -127,7 +175,7 @@ DBI::dbListTables(con)
 ```{r}
 bugs_df <- tbl(con, "bugs")
 #for quick view of the datatypes and the structure of data
-glimpse(bugs_df)
+skim(bugs_df)
 ```
 <font size="4">
 From the above table we can conclude that the few of the columns are having wrong datatype like:
@@ -185,51 +233,51 @@ bugs_df <- bugs_df %>%
 bugs_df <- bugs_df %>%
     select("bug_id", "bug_severity", "bug_status", "creation_ts", "delta_ts", "op_sys", "priority", "resolution", "component_id", "version", "lastdiffed", "deadline")
 #for quick view of the datatypes and the structure of data
-glimpse(bugs_df)
+skim(bugs_df)
 #showing the `datatable`
-datatable(head(bugs_df, 10), options = list(scrollX = TRUE))
+datatable(head(bugs_df, 5), options = list(scrollX = TRUE))
 ```
 
 ### About the Bugs Data used for Analysis
 
 <font size="4">
-I've taken the 12 columns under consideration to Analyse the Data. The brief discription about the columns as follows:
+I've taken the 12 columns under consideration to Analyse the Data. The brief description about the columns as follows:
 <ol>
     <li>
-        **bug_id: **The bug ID
+        **bug_id: **Unique numeric identifier for bug.
     </li>
     <li>
-        **bug_severity: **How severe the bug is, e.g. enhancement, critical
+        **bug_severity: **How severe the bug is, e.g. enhancement, critical, etc.
     </li>
     <li>
-        **bug_status: **Current status, e.g. NEW, RESOLVED
+        **bug_status: **Current status, e.g. NEW, RESOLVED, etc.
     </li>
     <li>
-        **creation_ts: **When bug was filed
+        **creation_ts: **When bug was filed.
     </li>
     <li>
         **delta_ts: **The timestamp of the last update on the bug. This includes updates to some related tables (e.g. "longdescs").
     </li>
     <li>
-        **op_sys: **Operating system bug was seen on, e.g. Windows Vista, Linux
+        **op_sys: **Operating system bug was seen on, e.g. Windows Vista, Linux, etc.
     </li>
     <li>
         **priority: **The priority of the bug (P1 = most urgent, P5 = least urgent).
     </li>
     <li>
-        **resolution: **The resolution, if the bug is in a closed state, e.g. FIXED, DUPLICATE
+        **resolution: **The resolution, if the bug is in a closed state, e.g. FIXED, DUPLICATE, etc.
     </li>
     <li>
-        **component_id: **Numeric ids of the components
+        **component_id: **Numeric ids of the components.
     </li>
     <li>
-        **version: **Version of software in which bug is seen
+        **version: **Version of software in which bug is seen.
     </li>
     <li>
         **lastdiffed: **The time at which information about this bug changing was last emailed to the cc list.
     </li>
     <li>
-        **deadline: **Date by which bug must be fixed
+        **deadline: **Date by which bug must be fixed.
     </li>
 </ol>
 </font>
@@ -237,21 +285,16 @@ I've taken the 12 columns under consideration to Analyse the Data. The brief dis
 ### Visualizations
 
 ```{r}
-# Plotting the Time Series graph with the bug_id and creation_ts
-bug_id <- bugs_df$bug_id
-creation <- bugs_df$creation_ts
-data <- data.frame(bug_id, creation)
+# Plotting the Bar graph and adding Trace of Time-Series graph with bug_id and creation_ts to see the spread
+data <- data.frame(bugs_df$bug_id, bugs_df$creation_ts)
 fig1 <- plot_ly(data,
-                x = ~creation,
-                y = ~bug_id,
+                x = ~bugs_df$creation_ts,
+                y = ~bugs_df$bug_id,
                 type = 'scatter',
                 mode = 'markers')
-fig1
-
-# Plotting the Bar graph and adding Trace of Time-Series graph with bug_id and creation_ts to see the spread
 fig1 <- plot_ly(data,
-                x = ~creation,
-                y = ~bug_id,
+                x = ~bugs_df$creation_ts,
+                y = ~bugs_df$bug_id,
                 type = 'bar',
                 name = "bug_creation bar")
 fig1 <- fig1 %>%
@@ -263,48 +306,30 @@ fig1
 ```
 
 <font size="4">
-From the above the visualizations, The `Time-series graph` shows that which bug_id was filed in which `month` and `year` and from the `bar graph` we can conclude that in which `year` the most bugs are filed and when one will zoom the graphs, one can see on which date which bug was filed.
+From the above the visualizations, The `Time-series graph` shows that which bug_id was filed in which `month` and `year` and from the `bar graph` we can conclude that in which `year` the most bugs are filed and when one will zoom the graphs, one can see on which date which bug was filed. The most of the Bugs are filled in the month of `January` and `July`.
 </font>
 
 ```{r}
 # Plotting the Time Series graph with the bug_id and delta_ts
-delta <- bugs_df$delta_ts
-data <- data.frame(bug_id, delta)
+data <- data.frame(bugs_df$bug_id, bugs_df$delta_ts)
 fig2 <- plot_ly(data, 
-                x = ~delta, 
-                y = ~bug_id, 
+                x = ~bugs_df$delta_ts, 
+                y = ~bugs_df$bug_id, 
                 type = 'scatter', 
                 mode = 'markers')
 fig2
 ```
 
 <font size="4">
-From the above the visualizations, The `Time-series graph` shows that which bug_id was last update.
-</font>
-
-```{r}
-# Plotting the Time Series graph with the bug_id and deadline
-deadline <- bugs_df$deadline
-data <- data.frame(bug_id, deadline)
-fig3 <- plot_ly(data,
-                y = ~bug_id,
-                x = ~deadline,
-                type = 'scatter',
-                mode = 'markers')
-fig3
-```
-
-<font size="4">
-From the above the visualizations, The `Time-series graph` shows that which bug_id was last update. Since, most of the bugs were not assigned the deadline to fix the bug.
+From the above the visualizations, The `Time-series graph` shows that which bug_id was last update. Most of the bugs are last updated in the month of `January`,`March`, `April`, and `July`.
 </font>
 
 ```{r}
 # Plotting bar graph with bug_id and resolution
-resolution <- bugs_df$resolution
-data <- data.frame(bug_id, resolution)
+data <- data.frame(bugs_df$bug_id, bugs_df$resolution)
 fig4 <- plot_ly(data,
-                x = ~resolution,
-                y = ~bug_id,
+                x = ~bugs_df$resolution,
+                y = ~bugs_df$bug_id,
                 type = 'bar')
 fig4
 ```
@@ -315,11 +340,10 @@ From the above the visualizations, The `Resolution bar-graph` shows that which b
 
 ```{r}
 # Plotting bar graph with bug_id and bug_status
-bug_status <- bugs_df$bug_status
-data <- data.frame(bug_id, bug_status)
+data <- data.frame(bugs_df$bug_id, bugs_df$bug_status)
 fig5 <- plot_ly(data,
-                x = ~bug_status,
-                y = ~bug_id,
+                x = ~bugs_df$bug_status,
+                y = ~bugs_df$bug_id,
                 type = 'bar')
 fig5
 ```
@@ -330,15 +354,243 @@ From the above the visualizations, The `bug_status bar-graph` shows that which b
 
 ```{r}
 # Plotting bar graph with bug_id and bug_severity
-bug_severity <- bugs_df$bug_severity
-data <- data.frame(bug_id, bug_severity)
+data <- data.frame(bugs_df$bug_id, bugs_df$bug_severity)
 fig6 <- plot_ly(data,
-                x = ~bug_severity,
-                y = ~bug_id,
+                x = ~bugs_df$bug_severity,
+                y = ~bugs_df$bug_id,
                 type = 'bar')
 fig6
 ```
 
 <font size="4">
-From the above the visualizations, The `bug_severity bar-graph` shows that which bug_id belongs to which category of bug_severity. Most of the bug which are filed are normal, some of the bugs need enhancements, minor and major and a very few bugs are filed under the blocker category.
+From the above the visualizations, The `bug_severity bar-graph` shows that which bug_id belongs to which category of bug_severity. Most of the bug which are filed are normal, some of the bugs which are filled under enhancements are retested for some features, minor and major and a very few bugs are filed under the blocker category.
 </font>
+
+## Data Exploartion of `bugs_activity` and `Attachments` Table from the Database
+```{r}
+bugs_act_df <- tbl(con, "bugs_activity")
+# Converting `bugs_act_df` to `dataframe`
+bugs_act_df <- as.data.frame(bugs_act_df)
+#for quick view of the datatypes and the structure of data
+skim(bugs_act_df)
+```
+
+### cleaing bugs_activity data
+
+```{r}
+bugs_act_df <- bugs_act_df %>%
+    mutate_at(vars("bug_when"), as.Date)
+```
+
+```{r}
+bugs_attach_df <- tbl(con, "attachments")
+# Converting `bugs_attach_df` to `dataframe`
+bugs_attach_df <- as.data.frame(bugs_attach_df)
+#for quick view of the datatypes and the structure of data
+skim(bugs_attach_df)
+```
+### Cleaning attachments Data
+
+```{r}
+bugs_attach_df <- bugs_attach_df %>%
+    mutate_at(vars("creation_ts", "modification_time"), as.Date) %>%
+    mutate_at(vars("isobsolete", "isprivate", "ispatch"), as.logical)
+```
+
+### Joining the `bugss`, `attachments` and `bugs_activity` tables
+
+```{r}
+#joining the `attachments` and `bugs_activity` table
+baa <- merge(bugs_attach_df, bugs_act_df, by = intersect(names(bugs_act_df), names(bugs_attach_df)), all = TRUE)
+#joining the `baa` and `bugs` table
+baa <- merge(baa, bugs_df, by = intersect(names(baa), names(bugs_df)), all = TRUE)
+
+#showing the baa i.e `attachments` and `bugs_activity` joined table in the `datatable`
+datatable(baa, options = list(scrollX = TRUE))
+```
+```{r}
+#for quick view of the datatypes and the structure of data
+skim(baa)
+```
+
+### About the bugs_activity and attachments Data Used for Analysis
+
+<font size="4">
+    I've taken the 9 columns under consideration to Analyse the Data. The brief description about the columns as follows:
+    <ol>
+        <li>
+            **bug_id: **Unique numeric identifier for bug.
+        </li>
+        <li>
+            **attach_id: **Unique numeric identifier for attachment.
+        </li>
+        <li>
+            **creation_ts: **When bug was filed.
+        </li>
+        <li>
+            **modification_time: **The date and time on which the attachment was last modified.
+        </li>
+        <li>
+            **description: **Text describing the attachment.
+        </li>
+        <li>
+            **mimetype: **Content type of the attachment like `text/plain` or `image/png`.
+        </li>
+        <li>
+            **ispatch: **Whether attachment is a patch.
+        </li>
+        <li>
+            **filename :**Path-less file-name of attachment.
+        </li>
+        <li>
+            **submitter_id: **Unique numeric identifier for who submitted the bug.
+        </li>
+        <li>
+            **isobsolete: **Whether attachment is marked obsolete.
+        </li>
+        <li>
+            **isprivate: **`TRUE` if the attachment should be `private` and `FALSE` if the attachment should be `public`.
+        </li>
+        <li>
+            **who: **Unique numeric identifier for the user who submitted the bug.
+        </li>
+        <li>
+            **bug_when: **The resolution, if the bug is in a closed state, e.g. FIXED, DUPLICATE
+        </li>
+        <li>
+            **added: **Values added, if any (comma-separated if multiple).
+        </li>
+        <li>
+            **removed: **Values removed, if any (comma-separated if multiple).
+        </li>
+    </ol>
+</font>
+
+### Visualizations
+
+```{r}
+res_dupli <- baa %>%
+    filter(resolution == "DUPLICATE")
+data <- data.frame(res_dupli$bug_id, res_dupli$creation_ts)
+fig7 <- res_dupli %>% 
+    plot_ly(
+        data = data,
+        y = ~res_dupli$bug_id, 
+        x = ~res_dupli$creation_ts,
+        type = 'scatter',
+        mode = 'markers'
+    )
+fig7 <- plot_ly(data,
+                x = ~res_dupli$creation_ts,
+                y = ~res_dupli$bug_id,
+                type = 'bar',
+                name = "Duplicate_Bugs Bar")
+fig7 <- fig7 %>%
+    add_trace(fig7,
+              type = 'scatter',
+              mode='lines+markers',
+              name = "Duplicate_Bugs Time_series")
+fig7 <- fig7 %>%
+    layout(
+        title = "Duplicate Bugs",
+        yaxis = list(title = "Bug_id"),
+        xaxis = list(title = "Creation_time"),
+        autosize = FALSE, margin = res_dupli$bug_id
+    )
+fig7
+```
+
+<font size = 4>
+    The above above Visualization is about the when the Duplicate bugs were filed, from the graph we can see that the most wast filled from `2011` to `2014`. In `January` and `July` the frequency of the Duplicate bugs are more than other months of the year.
+<font>
+
+```{r}
+res_fixed <- baa %>%
+    filter(resolution == "FIXED")
+diff_time <- rnorm(difftime(res_fixed$lastdiffed, res_fixed$creation_ts, units = "weeks"))
+data <- data.frame(res_fixed$bug_id, diff_time)
+fig8 <- plot_ly(
+   data,
+   x = ~diff_time,
+   y = ~res_fixed$bug_id,
+   type = "histogram",
+   alpha = 0.6, nbinsx = 30,
+   name = "bug_creation bar"
+)
+fig8 <- fig8 %>%
+    layout(
+        title = "Time Taken to Fix Bugs",
+        yaxis = list(title = "Bug_id"),
+        xaxis = list(title = "Week Frequency"),
+        autosize = FALSE
+    )
+fig8
+```
+
+<font size = 4>
+    The above above Histogram graph is about the how many weeks does a bug to get it fixed. From the graph we can see that most of the bug are fixed under `150 weeks`.
+<font>
+
+```{r}
+res_invalid <- baa %>%
+    filter(resolution == "INVALID")
+data <- data.frame(res_invalid$bug_id, res_invalid$creation_ts)
+fig9 <- plot_ly(
+    data,
+    x = ~res_invalid$creation_ts,
+    y = ~res_invalid$bug_id,
+    type = 'bar',
+    name = "bug_creation bar"
+)
+fig9 <- fig9 %>%
+    add_trace(
+        fig7,
+        type = 'scatter',
+        mode='lines+markers',
+        name = "bug_creation Time_series"
+    )
+fig9 <- fig9 %>%
+    layout(
+        title = "Invalid Bugs",
+        yaxis = list(title = "Bug_id"),
+        xaxis = list(title = "Creation_time"),
+        autosize = FALSE, margin = res_invalid$bug_id
+    )
+fig9
+```
+
+This Visualization refers to the Creation of the Invalid bugs. In the Year `2010` to `2016` the Invalid bugs are filed.
+
+## Data Exploartion of bugs_mod Table from the Database
+
+```{r}
+bugs_mod_df <- tbl(con, "bugs_mod")
+# Converting `bugs_mod_df to `dataframe`
+bugs_mod_df <- as.data.frame(bugs_mod_df)
+#for quick view of the datatypes and the structure of data
+skim(bugs_mod_df)
+```
+
+```{r}
+#showing the baa i.e `bugs_mod_df` table in the `datatable`
+datatable(bugs_mod_df, options = list(scrollX = TRUE))
+```
+
+## Data Exploartion of longdescs Table from the Database
+
+```{r}
+longdescs_df <- tbl(con, "longdescs")
+# Converting `longdescs_df` to `dataframe`
+longdescs_df <- as.data.frame(longdescs_df)
+#for quick view of the datatypes and the structure of data
+skim(longdescs_df)
+```
+
+```{r}
+#showing the baa i.e `longdescs_df` table in the `datatable`
+datatable(head(longdescs_df, 5), options = list(scrollX = TRUE))
+```
+
+```{r}
+dbDisconnect(con )
+```
