@@ -3,6 +3,8 @@ on: [pull_request]
 name: preview
 jobs:
     preview:
+        runs-on: ubuntu-latest
+        name: Preview
         steps:
           - name: HTML Preview
             uses: pavi2410/html-preview-action@v2
