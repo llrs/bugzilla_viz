@@ -366,21 +366,21 @@ fig6
 From the above the visualizations, The `bug_severity bar-graph` shows that which bug_id belongs to which category of bug_severity. Most of the bug which are filed are normal, some of the bugs which are filled under enhancements are retested for some features, minor and major and a very few bugs are filed under the blocker category.
 </font>
 
-## Data Exploartion of `bugs_activity` and `Attachments` Table from the Database
-```{r}
-bugs_act_df <- tbl(con, "bugs_activity")
-# Converting `bugs_act_df` to `dataframe`
-bugs_act_df <- as.data.frame(bugs_act_df)
-#for quick view of the datatypes and the structure of data
-skim(bugs_act_df)
-```
+## Data Exploartion of `bugs` and `Attachments` Table from the Database
+<!-- # ```{r} -->
+<!-- # bugs_act_df <- tbl(con, "bugs_activity") -->
+<!-- # # Converting `bugs_act_df` to `dataframe` -->
+<!-- # bugs_act_df <- as.data.frame(bugs_act_df) -->
+<!-- # #for quick view of the datatypes and the structure of data -->
+<!-- # skim(bugs_act_df) -->
+<!-- # ``` -->
 
-### cleaing bugs_activity data
+<!-- ### cleaing bugs_activity data -->
 
-```{r}
-bugs_act_df <- bugs_act_df %>%
-    mutate_at(vars("bug_when"), as.Date)
-```
+<!-- ```{r} -->
+<!-- bugs_act_df <- bugs_act_df %>% -->
+<!--     mutate_at(vars("bug_when"), as.Date) -->
+<!-- ``` -->
 
 ```{r}
 bugs_attach_df <- tbl(con, "attachments")
@@ -397,26 +397,23 @@ bugs_attach_df <- bugs_attach_df %>%
     mutate_at(vars("isobsolete", "isprivate", "ispatch"), as.logical)
 ```
 
-### Joining the `bugss`, `attachments` and `bugs_activity` tables
+### Joining the `bugs` and `attachments` tables
 
 ```{r}
-#joining the `attachments` and `bugs_activity` table
-baa <- merge(bugs_attach_df, bugs_act_df, by = intersect(names(bugs_act_df), names(bugs_attach_df)), all = TRUE)
-#joining the `baa` and `bugs` table
-baa <- merge(baa, bugs_df, by = intersect(names(baa), names(bugs_df)), all = TRUE)
+#joining the `attachments` and `bugs` table
+baa <- merge(bugs_attach_df, bugs_df, by = intersect(names(bugs_attach_df), names(bugs_df)), all = TRUE)
 
-#showing the baa i.e `attachments` and `bugs_activity` joined table in the `datatable`
-datatable(baa, options = list(scrollX = TRUE))
-```
-```{r}
-#for quick view of the datatypes and the structure of data
-skim(baa)
+# Created four columns `creation_month`, `creation_year` and `lastdiffed_month`, `lastdiffed_year` to find in which month and year a bug is created and modified respectively.
+baa <- baa %>%
+    mutate(creation_month = format(creation_ts, "%m"), creation_year = format(creation_ts, "%Y"), lastdiffed_month = format(lastdiffed, "%m"), lastdiffed_year = format(lastdiffed, "%Y")) %>%
+    group_by(creation_month, creation_year)
+datatable(head(baa, 5), options = list(scrollX = TRUE))
 ```
 
 ### About the bugs_activity and attachments Data Used for Analysis
 
 <font size="4">
-    I've taken the 9 columns under consideration to Analyse the Data. The brief description about the columns as follows:
+    I've taken the 15 columns under consideration to Analyse the Data. The brief description about the columns as follows:
     <ol>
         <li>
             **bug_id: **Unique numeric identifier for bug.
@@ -452,16 +449,16 @@ skim(baa)
             **isprivate: **`TRUE` if the attachment should be `private` and `FALSE` if the attachment should be `public`.
         </li>
         <li>
-            **who: **Unique numeric identifier for the user who submitted the bug.
+            **creation_month: **The month in which the bug is created.
         </li>
         <li>
-            **bug_when: **The resolution, if the bug is in a closed state, e.g. FIXED, DUPLICATE
+            **creation_year: **The year in which the bug is created.
         </li>
         <li>
-            **added: **Values added, if any (comma-separated if multiple).
+            **lastdiffed_month: **The month in which the bug is last modified.
         </li>
         <li>
-            **removed: **Values removed, if any (comma-separated if multiple).
+            **lastdiffed_year: **The year in which the bug is last modified.
         </li>
     </ol>
 </font>
@@ -469,94 +466,88 @@ skim(baa)
 ### Visualizations
 
 ```{r}
+#filtering the data where resolution is Duplicate
 res_dupli <- baa %>%
     filter(resolution == "DUPLICATE")
-data <- data.frame(res_dupli$bug_id, res_dupli$creation_ts)
-fig7 <- res_dupli %>% 
-    plot_ly(
-        data = data,
-        y = ~res_dupli$bug_id, 
-        x = ~res_dupli$creation_ts,
-        type = 'scatter',
-        mode = 'markers'
-    )
-fig7 <- plot_ly(data,
-                x = ~res_dupli$creation_ts,
-                y = ~res_dupli$bug_id,
-                type = 'bar',
-                name = "Duplicate_Bugs Bar")
-fig7 <- fig7 %>%
-    add_trace(fig7,
-              type = 'scatter',
-              mode='lines+markers',
-              name = "Duplicate_Bugs Time_series")
-fig7 <- fig7 %>%
-    layout(
-        title = "Duplicate Bugs",
-        yaxis = list(title = "Bug_id"),
-        xaxis = list(title = "Creation_time"),
-        autosize = FALSE, margin = res_dupli$bug_id
-    )
-fig7
 ```
 
+```{r}
+# plotting graph with creation month where resolution is Duplicate
+fig7 <- ggplot(res_dupli) +
+    geom_bar(aes(x = creation_month)) +
+    labs(
+        title = "Months in which Duplicate Bugs are Filed",
+        x = "Months",
+        y = "Bug_Count"
+    )
+ggplotly(fig7)
+```
 <font size = 4>
-    The above above Visualization is about the when the Duplicate bugs were filed, from the graph we can see that the most wast filled from `2011` to `2014`. In `January` and `July` the frequency of the Duplicate bugs are more than other months of the year.
+    The above above Visualization is about the month in which is bugs are filed where resolution is `Duplicate`. From the graph we can see that the most wast filled in the month of `August` having a bug count of `12` and the least bugs are filled in the month of `December` having a bug count of `2`.
 <font>
 
 ```{r}
+# plotting graph with creation year where resolution is Duplicate
+fig8 <- ggplot(res_dupli) +
+    geom_bar(aes(x = creation_year)) +
+    labs(
+        title = "Year in which Duplicate Bugs are Filed",
+        x = "Years",
+        y = "Bug_Count"
+    )
+ggplotly(fig8)
+```
+<font size = 4>
+    The above above Visualization is about the year in which is bugs are filed where resolution is `Duplicate`. From the graph we can see that the most wast filled in the year `2012` having a bug count of `11` and the least bugs are filled in the year `2007`, `2008` and `2019` having a bug count of `1`.
+<font>
+
+```{r}
+#filtering the data where resolution is Fixed
 res_fixed <- baa %>%
     filter(resolution == "FIXED")
-diff_time <- rnorm(difftime(res_fixed$lastdiffed, res_fixed$creation_ts, units = "weeks"))
-data <- data.frame(res_fixed$bug_id, diff_time)
-fig8 <- plot_ly(
-   data,
-   x = ~diff_time,
-   y = ~res_fixed$bug_id,
-   type = "histogram",
-   alpha = 0.6, nbinsx = 30,
-   name = "bug_creation bar"
-)
-fig8 <- fig8 %>%
-    layout(
-        title = "Time Taken to Fix Bugs",
-        yaxis = list(title = "Bug_id"),
-        xaxis = list(title = "Week Frequency"),
-        autosize = FALSE
-    )
-fig8
 ```
 
+```{r}
+# plotting graph with last modified year where resolution is Fixed
+fig9 <- ggplot(res_fixed) +
+    geom_bar(aes(x = lastdiffed_year)) +
+    labs(
+        title = "Year in which FIXED Bugs are Last Modified",
+        x = "Years",
+        y = "Bug_Count"
+    )
+ggplotly(fig9)
+```
 <font size = 4>
-    The above above Histogram graph is about the how many weeks does a bug to get it fixed. From the graph we can see that most of the bug are fixed under `150 weeks`.
+    The above above Visualization is about the year in which is bugs are last modified where resolution is `Fixed`. From the graph we can see that the most wast last modified in the year `2002` having a bug count of `328`.
+<font>
+
+```{r}
+# plotting graph with creation year where resolution is Fixed
+fig10 <- ggplot(res_fixed) +
+    geom_bar(aes(x = lastdiffed_month)) +
+    labs(
+        title = "Month in which FIXED Bugs are Filed",
+        x = "Month ",
+        y = "Bug_Count"
+    )
+ggplotly(fig10)
+```
+<font size = 4>
+    The above above Visualization is about the month in which is bugs are last modified where resolution is `Fixed`. From the graph we can see that the most wast last modified in the month `December` having a bug count of `559` and in the month of `September` having a bug count of `228` are least modified.
 <font>
 
 ```{r}
 res_invalid <- baa %>%
     filter(resolution == "INVALID")
-data <- data.frame(res_invalid$bug_id, res_invalid$creation_ts)
-fig9 <- plot_ly(
-    data,
-    x = ~res_invalid$creation_ts,
-    y = ~res_invalid$bug_id,
-    type = 'bar',
-    name = "bug_creation bar"
-)
-fig9 <- fig9 %>%
-    add_trace(
-        fig7,
-        type = 'scatter',
-        mode='lines+markers',
-        name = "bug_creation Time_series"
-    )
-fig9 <- fig9 %>%
-    layout(
-        title = "Invalid Bugs",
-        yaxis = list(title = "Bug_id"),
-        xaxis = list(title = "Creation_time"),
-        autosize = FALSE, margin = res_invalid$bug_id
-    )
-fig9
+
+fig11 <- ggplot(res_fixed) +
+    geom_bar(aes(x = creation_month))
+ggplotly(fig11)
+
+fig12 <- ggplot(res_fixed) +
+    geom_bar(aes(x = creation_year))
+ggplotly(fig12)
 ```
 
 This Visualization refers to the Creation of the Invalid bugs. In the Year `2010` to `2016` the Invalid bugs are filed.
@@ -573,7 +564,7 @@ skim(bugs_mod_df)
 
 ```{r}
 #showing the baa i.e `bugs_mod_df` table in the `datatable`
-datatable(bugs_mod_df, options = list(scrollX = TRUE))
+datatable(head(bugs_mod_df, 5), options = list(scrollX = TRUE))
 ```
 
 ## Data Exploartion of longdescs Table from the Database
