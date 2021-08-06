@@ -285,39 +285,39 @@ I've taken the 12 columns under consideration to Analyse the Data. The brief des
 ### Visualizations
 
 ```{r}
-# Plotting the Bar graph and adding Trace of Time-Series graph with bug_id and creation_ts to see the spread
-data <- data.frame(bugs_df$bug_id, bugs_df$creation_ts)
-fig1 <- plot_ly(data,
-                x = ~bugs_df$creation_ts,
-                y = ~bugs_df$bug_id,
-                type = 'scatter',
-                mode = 'markers')
-fig1 <- plot_ly(data,
-                x = ~bugs_df$creation_ts,
-                y = ~bugs_df$bug_id,
-                type = 'bar',
-                name = "bug_creation bar")
-fig1 <- fig1 %>%
-    add_trace(fig1,
-              type = 'scatter',
-              mode='lines+markers',
-              name = "bug_creation Time_series")
-fig1
+bug_created <- bugs_df %>%
+    ggplot(aes(x = creation_ts, y = bug_id)) +
+    geom_line(color = "darkorchid4") +
+    labs(title = "Bug Creation",
+           subtitle = "The data frame is sent to the plot using pipes",
+           y = "Bug ID",
+           x = "Date") +
+    theme_bw(base_size = 15)
+ggplotly(bug_created)
 ```
-
 <font size="4">
-From the above the visualizations, The `Time-series graph` shows that which bug_id was filed in which `month` and `year` and from the `bar graph` we can conclude that in which `year` the most bugs are filed and when one will zoom the graphs, one can see on which date which bug was filed. The most of the Bugs are filled in the month of `January` and `July`.
+    From the above the visualizations, The `Time-series graph` shows that which bug_id was filed in which `month` and `year` and from the `bar graph` we can conclude that in which `year` the most bugs are filed and when one will zoom the graphs, one can see on which date which bug was filed. The most of the Bugs are filled in the month of `January` and `July`.
 </font>
+```{r}
+last_modified <- bugs_df %>%
+    ggplot(aes(x = lastdiffed, y = bug_id)) +
+    geom_line() +
+    labs(title = "Bug Last Modified",
+         y = "Bug ID",
+         x = "Date") +
+    theme_bw(base_size = 15)
+ggplotly(last_modified)
+```
 
 ```{r}
 # Plotting the Time Series graph with the bug_id and delta_ts
-data <- data.frame(bugs_df$bug_id, bugs_df$delta_ts)
-fig2 <- plot_ly(data, 
-                x = ~bugs_df$delta_ts, 
-                y = ~bugs_df$bug_id, 
-                type = 'scatter', 
-                mode = 'markers')
-fig2
+last_modified_graph <- bugs_df %>%
+    ggplot(aes(x = delta_ts, y = bug_id)) +
+    geom_point() +
+    labs(title = "Bug changing was last emailed to the cc list",
+           y = "Bug ID",
+           x = "Date") + theme_bw(base_size = 15)
+ggplotly(last_modified_graph)
 ```
 
 <font size="4">
@@ -325,13 +325,15 @@ From the above the visualizations, The `Time-series graph` shows that which bug_
 </font>
 
 ```{r}
-# Plotting bar graph with bug_id and resolution
-data <- data.frame(bugs_df$bug_id, bugs_df$resolution)
-fig4 <- plot_ly(data,
-                x = ~bugs_df$resolution,
-                y = ~bugs_df$bug_id,
-                type = 'bar')
-fig4
+Resolution_graph <- ggplot(bugs_df,aes(x = resolution)) +
+    geom_bar() +
+    scale_x_discrete(guide = guide_axis(n.dodge = 5)) +
+    labs(
+        title = "Bug Resolution Bar graph with Bug Count",
+        x = "Resolution",
+        y = "Bug Count"
+    ) + coord_flip()
+ggplotly(Resolution_graph)
 ```
 
 <font size="4">
@@ -339,27 +341,30 @@ From the above the visualizations, The `Resolution bar-graph` shows that which b
 </font>
 
 ```{r}
-# Plotting bar graph with bug_id and bug_status
-data <- data.frame(bugs_df$bug_id, bugs_df$bug_status)
-fig5 <- plot_ly(data,
-                x = ~bugs_df$bug_status,
-                y = ~bugs_df$bug_id,
-                type = 'bar')
-fig5
+Status_graph <- ggplot(bugs_df,aes(x = bug_status)) +
+    geom_bar() +
+    scale_x_discrete(guide = guide_axis(n.dodge = 5)) +
+    labs(
+        title = "Bug Status Bar graph with Bug Count",
+        x = "Bug Status",
+        y = "Bug Count"
+    )
+ggplotly(Status_graph)
 ```
-
 <font size="4">
 From the above the visualizations, The `bug_status bar-graph` shows that which bug_id belongs to which category of bug_status, e.g. NEW, RESOLVED, etc. As we can conclude, that most bugs belongs to the closed category of the bug_status.
 </font>
 
 ```{r}
-# Plotting bar graph with bug_id and bug_severity
-data <- data.frame(bugs_df$bug_id, bugs_df$bug_severity)
-fig6 <- plot_ly(data,
-                x = ~bugs_df$bug_severity,
-                y = ~bugs_df$bug_id,
-                type = 'bar')
-fig6
+Severity_graph <- ggplot(bugs_df,aes(x = bug_severity)) +
+    geom_bar() +
+    scale_x_discrete(guide = guide_axis(n.dodge = 5)) +
+    labs(
+        title = "Bug Severity Bar graph with Bug Count",
+        x = "Bug Severity",
+        y = "Bug Count"
+    )
+ggplotly(Severity_graph)
 ```
 
 <font size="4">
@@ -367,20 +372,6 @@ From the above the visualizations, The `bug_severity bar-graph` shows that which
 </font>
 
 ## Data Exploartion of `bugs` and `Attachments` Table from the Database
-<!-- # ```{r} -->
-<!-- # bugs_act_df <- tbl(con, "bugs_activity") -->
-<!-- # # Converting `bugs_act_df` to `dataframe` -->
-<!-- # bugs_act_df <- as.data.frame(bugs_act_df) -->
-<!-- # #for quick view of the datatypes and the structure of data -->
-<!-- # skim(bugs_act_df) -->
-<!-- # ``` -->
-
-<!-- ### cleaing bugs_activity data -->
-
-<!-- ```{r} -->
-<!-- bugs_act_df <- bugs_act_df %>% -->
-<!--     mutate_at(vars("bug_when"), as.Date) -->
-<!-- ``` -->
 
 ```{r}
 bugs_attach_df <- tbl(con, "attachments")
@@ -466,45 +457,72 @@ datatable(head(baa, 5), options = list(scrollX = TRUE))
 ### Visualizations
 
 ```{r}
+#Counting number of bugs per month in an year
+bugs_counts <- baa %>%
+    arrange(bug_id) %>%
+    count(creation_year)
+skim(head(bugs_counts))
+```
+
+```{r}
+# 3D plot to see the number of bug counts per month in a year
+bug_count_graph <- plot_ly(
+    x = bugs_counts$creation_month,
+    y = bugs_counts$creation_year,
+    z = bugs_counts$n,
+    type="scatter3d", 
+    mode="markers", marker = list(size=2)) 
+
+bug_count_graph <- bug_count_graph %>%
+    layout(
+        title = "Bug Counts per month in a year"
+    )
+bug_count_graph
+```
+<font size = 4>
+    The above visualization is about the number of bugs counts per month in a year. The Most number of bug count is `77` in the `April, 2015` and the minimum bug_count is `2`.
+</font>
+```{r}
 #filtering the data where resolution is Duplicate
 res_dupli <- baa %>%
-    filter(resolution == "DUPLICATE")
+    filter(resolution == "DUPLICATE" | bug_status == "closed")
 ```
 
 ```{r}
 # plotting graph with creation month where resolution is Duplicate
-fig7 <- ggplot(res_dupli) +
+dupli_month_graph <- ggplot(res_dupli) +
     geom_bar(aes(x = creation_month)) +
     labs(
         title = "Months in which Duplicate Bugs are Filed",
         x = "Months",
         y = "Bug_Count"
     )
-ggplotly(fig7)
+ggplotly(dupli_month_graph)
 ```
 <font size = 4>
-    The above above Visualization is about the month in which is bugs are filed where resolution is `Duplicate`. From the graph we can see that the most wast filled in the month of `August` having a bug count of `12` and the least bugs are filled in the month of `December` having a bug count of `2`.
+    The above above Visualization is about the month in which is bugs are filed where resolution is `Duplicate`. From the graph we can see that the most wast filled in the month of `August` having a bug count of `12` and the least bugs are filled in the month of `December` having a bug count of `2`. This graph is from year `2006` to `2021`.
 <font>
 
 ```{r}
 # plotting graph with creation year where resolution is Duplicate
-fig8 <- ggplot(res_dupli) +
+duplicate_year <- ggplot(res_dupli) +
     geom_bar(aes(x = creation_year)) +
     labs(
         title = "Year in which Duplicate Bugs are Filed",
-        x = "Years",
+        x = "Year",
         y = "Bug_Count"
     )
-ggplotly(fig8)
+ggplotly(duplicate_year)
 ```
+
 <font size = 4>
-    The above above Visualization is about the year in which is bugs are filed where resolution is `Duplicate`. From the graph we can see that the most wast filled in the year `2012` having a bug count of `11` and the least bugs are filled in the year `2007`, `2008` and `2019` having a bug count of `1`.
+    The above above Visualization is about the year in which is bugs are filed where resolution is `Duplicate`. From the graph we can see that the most wast filled in the year `2012` having a bug count of `11` and the least bugs are filled in the year `2007`, `2008` and `2019` having a bug count of `1`. This graph is from year `2006` to `2021`.
 <font>
 
 ```{r}
 #filtering the data where resolution is Fixed
 res_fixed <- baa %>%
-    filter(resolution == "FIXED")
+    filter(resolution == "FIXED" | bug_status == "closed")
 ```
 
 ```{r}
@@ -513,13 +531,14 @@ fig9 <- ggplot(res_fixed) +
     geom_bar(aes(x = lastdiffed_year)) +
     labs(
         title = "Year in which FIXED Bugs are Last Modified",
-        x = "Years",
+        x = "Year",
         y = "Bug_Count"
-    )
+    ) +
+    coord_flip()
 ggplotly(fig9)
 ```
 <font size = 4>
-    The above above Visualization is about the year in which is bugs are last modified where resolution is `Fixed`. From the graph we can see that the most wast last modified in the year `2002` having a bug count of `328`.
+    The above above Visualization is about the year in which is bugs are last modified where resolution is `Fixed` and their status is `closed`. From the graph we can see that the most wast last modified in the year `2002` having a bug count of `328` and In year, `2021` `47` bugs are `fixed` and `closed`.
 <font>
 
 ```{r}
@@ -527,30 +546,65 @@ ggplotly(fig9)
 fig10 <- ggplot(res_fixed) +
     geom_bar(aes(x = lastdiffed_month)) +
     labs(
-        title = "Month in which FIXED Bugs are Filed",
+        title = "Month in which FIXED Bugs are Last Modified",
         x = "Month ",
         y = "Bug_Count"
     )
 ggplotly(fig10)
 ```
 <font size = 4>
-    The above above Visualization is about the month in which is bugs are last modified where resolution is `Fixed`. From the graph we can see that the most wast last modified in the month `December` having a bug count of `559` and in the month of `September` having a bug count of `228` are least modified.
+    The above above Visualization is about the month in which is bugs are last modified where resolution is `Fixed`. From the graph we can see that the most wast last modified in the month `December` having a bug count of `559` and in the month of `September` having a bug count of `228` are least modified. This graph is from year `1998` to `2021`.
 <font>
 
 ```{r}
 res_invalid <- baa %>%
-    filter(resolution == "INVALID")
+    filter(resolution == "INVALID" | bug_status == "CLOSED")
 
-fig11 <- ggplot(res_fixed) +
-    geom_bar(aes(x = creation_month))
-ggplotly(fig11)
-
-fig12 <- ggplot(res_fixed) +
-    geom_bar(aes(x = creation_year))
-ggplotly(fig12)
+invalid_graph <- ggplot(res_invalid) +
+    geom_bar(aes(x = creation_month)) +
+    labs(
+        title = "Month in which INVALID Bugs are Filed",
+        x = "Month ",
+        y = "Bug_Count"
+    )
+ggplotly(invalid_graph)
 ```
 
-This Visualization refers to the Creation of the Invalid bugs. In the Year `2010` to `2016` the Invalid bugs are filed.
+<font size = 4>
+    The above above Visualization is about the month in which is bugs are last modified where `resolution` is `Invalid` and `status` is `closed`. From the graph we can see that the most wast created in the month `October` having a bug count of `625` and in the month of `Febuary` having a bug count of `491` are created. This graph is from year `1998` to `2021`.
+<font>
+
+```{r}
+invaild_year_graph <- ggplot(res_invalid) +
+    geom_bar(aes(x = creation_year)) +
+    labs(
+        title = "Year in which INVALID Bugs are Filed",
+        x = "Year",
+        y = "Bug_Count"
+    ) + coord_flip()
+ggplotly(invaild_year_graph)
+```
+
+<font size = 4>
+    This Visualization refers to the Creation of the Invalid bugs. In year, `1998` the a total of `63` Invalid bugs are created which are least and in the year `2013` a total of `431` bugs are filed which are most.
+<font>
+
+```{r}
+priority_graph <- baa %>%
+    ggplot(aes(x = creation_year, y = bug_id)) +
+    geom_point() +
+    facet_wrap( ~priority) +
+    labs(title = "Bugs created year with their priorities",
+         y = "Bug ID",
+         x = "Date") + theme_bw(base_size = 9) +
+    coord_flip()
+ggplotly(priority_graph)
+```
+
+<font size = 4>
+    The above visualization gives the insight about the bugs when they are created and under which priority the fall like from the above plot we can conclude that the majority of the bugs are filed under the `P5` which is having the `least priority`.
+</font>
+
 
 ## Data Exploartion of bugs_mod Table from the Database
 
