@@ -106,7 +106,7 @@ For Example,
                 Create an empty database: `create database bugRzilla;`
             </li>
             <li>
-                To check wheather the database is created or not use: `show databases;`
+                To check whether the database is created or not use: `show databases;`
             </li>
             <li>
                 Once an empty database is created then to dump the SQL data in the database use: `source /home/data/Documents/GSOC/R-bugs.sql;`
@@ -296,7 +296,7 @@ bug_created <- bugs_df %>%
 ggplotly(bug_created)
 ```
 <font size="4">
-    From the above the visualizations, The `Time-series graph` shows that which bug_id was filed in which `month` and `year` and from the `bar graph` we can conclude that in which `year` the most bugs are filed and when one will zoom the graphs, one can see on which date which bug was filed. The most of the Bugs are filled in the month of `January` and `July`.
+    The `Time-series graph` shows that which bug_id was filed in which `month` and `year` and from the `bar graph` we can conclude that in which `year` the most bugs are filed and when one will zoom the graphs, one can see on which date which bug was filed. The most of the Bugs are filled in the month of `January` and `July`.
 </font>
 ```{r Bug last modified graph}
 last_modified <- bugs_df %>%
@@ -310,7 +310,7 @@ ggplotly(last_modified)
 ```
 
 <font size="4">
-    From the above the visualizations, The `Time-series graph` shows that which bug_id was last update. Most of the bugs are last updated in the month of `January`,`March`, `April`, and `July` and in the year from `2014` to `2016` most bugs are modified and in `2019` to `2020` most bugs are filed. 
+    The `Time-series graph` shows that which bug_id was the last update. Most of the bugs are last updated in the month of `January`, `March`, `April`, and `July` and in the year from `2014` to `2016` most bugs are modified and in `2019` to `2020` most bugs are filed.
 </font>
 
 ```{r Bug changing was last emailed to the cc list graph}
@@ -325,7 +325,7 @@ ggplotly(last_modified_graph)
 ```
 
 <font size="4">
-From the above the visualizations, The `Time-series graph` shows that which bug_id was last update. Most of the bugs are last updated in the month of `January`,`March`, `April`, and `July`.
+    The `Time-series graph` shows that which bug_id was the last update. Most of the bugs are last updated in the month of `January`,`March`, `April`, and `July`.
 </font>
 
 ```{r Bug Resolution Bar graph}
@@ -341,7 +341,7 @@ ggplotly(Resolution_graph)
 ```
 
 <font size="4">
-From the above the visualizations, The `Resolution bar-graph` shows that which bug_id belongs to which category of resolution, if the bug is in a closed state, e.g. FIXED, DUPLICATE, etc. As we can conclude, that most bugs belongs to the fixed category of the resolution.
+    The `Resolution bar-graph` shows which bug_id belongs to which resolution category, if the bug is in a closed state, e.g. FIXED, DUPLICATE, etc. As we can conclude, that most bugs belong to the fixed category of the resolution.
 </font>
 
 ```{r Bug Status Bar graph}
@@ -356,7 +356,7 @@ Status_graph <- ggplot(bugs_df,aes(x = bug_status)) +
 ggplotly(Status_graph)
 ```
 <font size="4">
-From the above the visualizations, The `bug_status bar-graph` shows that which bug_id belongs to which category of bug_status, e.g. NEW, RESOLVED, etc. As we can conclude, that most bugs belongs to the closed category of the bug_status.
+    The `bug_status bar-graph` shows which bug_id belongs to which category of bug_status, e.g. NEW, RESOLVED, etc. As we can conclude, that most bugs belong to the closed category of the bug_status.
 </font>
 
 ```{r Bug Severity Bar graph}
@@ -372,7 +372,7 @@ ggplotly(Severity_graph)
 ```
 
 <font size="4">
-From the above the visualizations, The `bug_severity bar-graph` shows that which bug_id belongs to which category of bug_severity. Most of the bug which are filed are normal, some of the bugs which are filled under enhancements are retested for some features, minor and major and a very few bugs are filed under the blocker category.
+    The `bug_severity bar-graph` shows which bug_id belongs to which category of bug_severity. Most of the bugs which are filed are normal, some of the bugs that are filled under enhancements are retested for some minor and major features, and a very few bugs are filed under the blocker category.
 </font>
 
 ## Data Exploartion of `bugs` and `Attachments` Table from the Database
@@ -492,7 +492,7 @@ bug_count_graph <- bug_count_graph %>%
 bug_count_graph
 ```
 <font size = 4>
-    The above visualization is about the number of bugs counts per month in a year. The Most number of bug count is `77` in the `April, 2015` and the minimum bug_count is `2`.
+    The `3D graph` or `surface plot` is about the number of bugs counts per month in a year. The Most number of bug count is `77` in `April 2015` and the minimum bug_count is `2`.
 </font>
 ```{r Filtering duplicate and closed bugs rows}
 #filtering the data where resolution is Duplicate
@@ -512,7 +512,7 @@ dupli_month_graph <- ggplot(res_dupli) +
 ggplotly(dupli_month_graph)
 ```
 <font size = 4>
-    The above above Visualization is about the month in which is bugs are filed where resolution is `Duplicate`. From the graph we can see that the most wast filled in the month of `August` having a bug count of `12` and the least bugs are filled in the month of `December` having a bug count of `2`. This graph is from year `2006` to `2021`.
+    The above bar graph is about the month in which is bugs are filed where resolution is `Duplicate`. From the graph, we can see that most were filled in the month of `August` with a bug count of `12` and the least bugs are filled in the month of `December` with a bug count of `2`. This graph is from the year `2006` to `2021`.
 <font>
 
 ```{r Duplicate Year graph}
@@ -528,7 +528,7 @@ ggplotly(duplicate_year)
 ```
 
 <font size = 4>
-    The above above Visualization is about the year in which is bugs are filed where resolution is `Duplicate`. From the graph we can see that the most wast filled in the year `2012` having a bug count of `11` and the least bugs are filled in the year `2007`, `2008` and `2019` having a bug count of `1`. This graph is from year `2006` to `2021`.
+    The above Visualization is about the year in which is bugs are filed where resolution is `Duplicate`. From the graph, we can see that the most ware filled in the year `2012` having a bug count of `11` and the least bugs are filled in the year `2007`, `2008` and `2019` having a bug count of `1`. This graph is from the year `2006` to `2021`.
 <font>
 
 ```{r Filtering fixed and closed bugs rows}
@@ -550,7 +550,7 @@ fixed_year_graph <- ggplot(res_fixed) +
 ggplotly(fixed_year_graph)
 ```
 <font size = 4>
-    The above above Visualization is about the year in which is bugs are last modified where resolution is `Fixed` and their status is `closed`. From the graph we can see that the most wast last modified in the year `2002` having a bug count of `328` and In year, `2021` `47` bugs are `fixed` and `closed`.
+    The above Visualization is about the year in which is bugs are last modified where resolution is `Fixed` and their status is `closed`. From the graph, we can see that the most wast last modified in the year `2002` having a bug count of `328` and In the year, `2021` `47` bugs are `fixed` and `closed`.
 <font>
 
 ```{r Fixed month graph} 
@@ -565,7 +565,7 @@ fixed_month_graph <- ggplot(res_fixed) +
 ggplotly(fixed_month_graph)
 ```
 <font size = 4>
-    The above above Visualization is about the month in which is bugs are last modified where resolution is `Fixed`. From the graph we can see that the most wast last modified in the month `December` having a bug count of `559` and in the month of `September` having a bug count of `228` are least modified. This graph is from year `1998` to `2021`.
+    The `bar graph` is about the month in which is bugs are last modified where the resolution is `Fixed`. From the graph, we can see that the most wast last modified in the month `December` having a bug count of `559` and in the month of `September` having a bug count of `228` are least modified. This graph is from the year `1998` to `2021`.
 <font>
 
 ```{r Invalid bugs graph}
@@ -583,7 +583,7 @@ ggplotly(invalid_graph)
 ```
 
 <font size = 4>
-    The above above Visualization is about the month in which is bugs are last modified where `resolution` is `Invalid` and `status` is `closed`. From the graph we can see that the most wast created in the month `October` having a bug count of `625` and in the month of `Febuary` having a bug count of `491` are created. This graph is from year `1998` to `2021`.
+    The `bar graph` is about the month in which is bugs are last modified where `resolution` is `Invalid` and `status` is `closed`. From the graph, we can see that the most were created in the month `October` having a bug count of `625` and in the month of `February` having a bug count of `491` are created. This graph is from the year `1998` to `2021`.
 <font>
 
 ```{r Invaild year graph}
@@ -598,7 +598,7 @@ ggplotly(invaild_year_graph)
 ```
 
 <font size = 4>
-    This Visualization refers to the Creation of the Invalid bugs. In year, `1998` the a total of `63` Invalid bugs are created which are least and in the year `2013` a total of `431` bugs are filed which are most.
+    The `bar graph` refers to the Creation of Invalid bugs. In the year, `1998` the total of `63` Invalid bugs are created which are least, and in the year `2013` a total of `431` bugs are filed which are most.
 <font>
 
 ```{r Priority graph}
@@ -614,11 +614,12 @@ ggplotly(priority_graph)
 ```
 
 <font size = 4>
-    The above visualization gives the insight about the bugs when they are created and under which priority the fall like from the above plot we can conclude that the majority of the bugs are filed under the `P5` which is having the `least priority`.
+    The `Lattice plot` gives insight about the bugs when they are created and under which priority they fall like from the above plot we can conclude that the majority of the bugs are filed under the `P5` which is having the `least priority`.
 </font>
 
+## Data Exploration of all the tables in the database
 
-## Data Exploartion of bugs_mod Table from the Database
+### Data Exploartion of bugs_mod Table from the Database
 
 ```{r bugs mod connection}
 bugs_mod_df <- tbl(con, "bugs_mod")
@@ -633,7 +634,7 @@ skim(bugs_mod_df)
 datatable(head(bugs_mod_df, 5), options = list(scrollX = TRUE))
 ```
 
-## Data Exploartion of longdescs Table from the Database
+### Data Exploartion of longdescs Table from the Database
 
 ```{r longdescs connection}
 longdescs_df <- tbl(con, "longdescs")
@@ -648,7 +649,7 @@ skim(longdescs_df)
 datatable(head(longdescs_df, 5), options = list(scrollX = TRUE))
 ```
 
-## Data Exploartion of bugs_activity Table from the Database
+### Data Exploartion of bugs_activity Table from the Database
 
 ```{r loading bugs_activity table}
 bugs_act_df <- tbl(con, "bugs_activity")
@@ -658,7 +659,7 @@ bugs_act_df <- as.data.frame(bugs_act_df)
 skim(bugs_act_df)
 ```
 
-## Joing all the the data tables
+### Joing all the the data tables
 
 ```{r joining all the data tables}
 #joining all the data tables
@@ -728,7 +729,7 @@ cre_last_year_graph <- total_data %>%
 ggplotly(cre_last_year_graph)
 ```
 <font size = 4>
-    In the year `2015` and `2016`, a total of `51` bugs are created and in the year of `2020` a total of `51` bugs are modified as well as in the year `2015`, `31` bugs are modified. From the year `2013` to `2016` their is a peak in the creation and modification of the bugs and from the year `2003` to `2009` the is a almost a linear downfall and rising of the creation and modification of the bugs.
+    In the year `2015` and `2016`, a total of `51` bugs are created and in the year `2020` a total of `51` bugs are modified as well as in the year `2015`, `31` bugs are modified. From the year `2013` to `2016` there is a peak in the creation and modification of the bugs and from the year `2003` to `2009` the is an almost linear downfall and rising in the creation and modification of the bugs.
 <font>
 
 ```{r cre_last_month_graph}
@@ -746,7 +747,7 @@ ggplotly(cre_last_month_graph)
 ```
 
 <font size = 4>
-    In the month `December, 2015` and `January, 2016`, a total of `51` bugs are created which is the sudden increase. In the `September, 2016` to `October, 2016` and `October, 2016` to `November, 2016` their is a linear increase in the creation of the bugs. From the last_modified graph, in the `November, 2020` a total of `51` bugs are last modified mostly in every month a avg of `2` bugs are modified from till `2010` but from the `2011` their is an increase in the modification of the bugs having a avg of `9` bugs.
+    In the month `December 2015` and `January 2016`, a total of `51` bugs are created which is a sudden increase. In the `September 2016` to `October 2016` and `October 2016` to `November 2016` there is a linear increase in the creation of the bugs. From the last_modified graph, in the `November 2020` a total of `51` bugs are last modified mostly in every month an avg of `2` bugs are modified from till `2010` but from the `2011` there is an increase in the modification of the bugs having an avg of `9` bugs.
 <font>
 
 ```{r cre_last_week_graph}
@@ -763,77 +764,28 @@ cre_last_week_graph <- total_data %>%
 ggplotly(cre_last_week_graph)
 ```
 <font size = 4>
-    In the `December, 2015` and `January, 2016`, a total of `51` bugs are created per week which is the sudden increase. In the `September, 2016` to `October, 2016` and `October, 2016` to `November, 2016` their is a linear increase in the creation of the bugs. From the last_modified graph, in the `November, 2020` a total of `51` bugs are last modified mostly in every week a avg of `2` or `3` bugs are modified from till `2010` but from the `2011` their is an increase in the modification of the bugs having a avg of `10` to `12` bugs each week.
+    In the `December 2015` and `January 2016`, a total of `51` bugs are created per week which is a sudden increase. In the `September 2016` to `October 2016` and `October 2016` to `November 2016` there is a linear increase in the creation of the bugs. From the last_modified graph, in the `November 2020` a total of `51` bugs are last modified mostly in every week an avg of `2` or `3` bugs are modified from till `2010` but from the `2011` there is an increase in the modification of the bugs having an avg of `10` to `12` bugs each week.
 <font>
 
 # Conclusion
 
 <font size = 4>
-    In this project, I've visualized the bugRzilla database creating various visualization.
-    <ul>
+    In this project, I've visualized the bugRzilla database creating various visualization. The major graphs are the `time-series graph` which is the relationship of `bug_id`, `creation_ts`, `delta_ts`, and `last_modified` to show when the bug was created, last modified & last email to the cc list, last modified respectively. Some time-series graphs can help us to see in which week, month, the year most bugs are created.
+
+The `bar` graph which is the relationship between the `bug_count`, `bug_status`, `bug_severity`, `resolution` to check the status like closed, new, etc, how severe the bug is like whether the bug is critical, major, etc and the resolution of the bug-like if the bug is in a closed state, e.g. FIXED, DUPLICATE, etc.
+
+If your Bug report is effective, then its chances to get fixed are higher. It totally depends upon how effectively one reports it. Like some values are left and that should not be null to report the bugs effectively. For example, the `Priority`, `bug severity` even the `resolution` of the bugs should be specified. From the bugs data table, we can see that the column `bug_file_loc` is mostly empty like there should be proper reporting where the bug occurred. Event `Priority` is generally set from `P1` to `P5.` `P1` as “fix the bug with the highest priority” and `P5` as ” Fix when time permits” There are many rows where the priority is not mentioned which in turns takes more time by the developer to set the priority. At last in the description of the bug, these points should be there which can create the report much effective i.e.
+    <ol>
         <li>
-            Starting from the line-graph between the `bug_id` and `creation_ts(date)`, this visualization is about when the bug was created. The Time-series graph shows that which bug_id was filed in which month and year and from the bar graph we can conclude that in which year the most bugs are filed and when one will zoom the graphs, one can see on which date which bug was filed. The most of the Bugs are filled in the month of `January `and `July`.
-        </li>
-        
-        <li>
-            The next graph is plotted between `bug_id` and `last_modified`, the `Time-series graph` shows that which bug_id was last update. Most of the bugs are last updated in the month of `January`,`March`, `April`, and `July` and in the year from `2014` to `2016` most bugs are modified and in `2019` to `2020` most bugs are filed.
-        </li>
-        
-        <li>
-            The next graph is plotted between `bug_id` and `delta_ts`, the `Time-series graph` shows that which bug_id was last update. Most of the bugs are last updated in the month of `January`,`March`, `April`, and `July`.
-        </li>
-        
-        <li>
-            The bar-graph between the `bug_count` and `resolution`, this visualization is about the `Resolution` bar-graph shows that which bug_id belongs to which category of resolution, if the bug is in a closed state, e.g. FIXED, DUPLICATE, etc. As we can conclude, that most bugs belongs to the fixed category of the resolution.
-        </li>
-        
-        <li>
-            The next graph is plotted between `bug_id` and `bug_status`, the bug_status bar-graph shows that which bug_id belongs to which category of bug_status, e.g. NEW, RESOLVED, etc. As we can conclude, that most bugs belongs to the closed category of the bug_status.
-        </li>
-        
-      6  <li>
-            The next graph is plotted between `bug_id` and `bug_severity`, the bug_severity bar-graph shows that which bug_id belongs to which category of bug_severity. Most of the bug which are filed are normal, some of the bugs which are filled under enhancements are retested for some features, minor and major and a very few bugs are filed under the blocker category.
-        </li>
-        
-        <li>
-            The next graph is plotted between `creation_month`, `bug_count` and `creation_year`, The above visualization is about the number of bugs counts per month in a year. The Most number of bug count is 77 in the April, 2015 and the minimum bug_count is 2.
-        </li>
-        
-        <li>
-            The next graph is plotted between `bug_count` and `creation_month`, the above above Visualization is about the month in which is bugs are filed where resolution is  Duplicate. From the graph we can see that the most wast filled in the month of August having a bug count of 12 and the least bugs are filled in the month of December having a bug count of 2. This graph is from year 2006 to 2021.
-        </li>
-        
-        <li>
-            The next graph is plotted between `bug_count` and `creation_year`, the above above Visualization is about the year in which is bugs are filed where resolution is Duplicate. From the graph we can see that the most wast filled in the year 2012 having a bug count of 11 and the least bugs are filled in the year 2007, 2008 and 2019 having a bug count of 1. This graph is from year  2006 to 2021.
-        </li>
-        
-        <li>
-            The next graph is plotted between `bug_count` and `lastdiffed_year`, The above above Visualization is about the year in which is bugs are last modified where resolution is  Fixed and their status is closed. From the graph we can see that the most wast last modified in the year 2002 having a bug count of 328 and In year, 2021 47 bugs are fixed and closed.
+            **Reproduce steps:** Clearly, mention the steps to reproduce the bug.
         </li>
         <li>
-            The next graph is plotted between `bug_count` and `lastdiffed_month`, he above above Visualization is about the month in which is bugs are last modified where resolution is  Fixed. From the graph we can see that the most wast last modified in the month December having a bug count of 559 and in the month of September having a bug count of 228 are least modified. This graph is from year 1998 to 2021
+            **Expected result:** How the application should behave on the above-mentioned steps.
         </li>
         <li>
-            The next graph is plotted between `bug_count` and `creation_month`, the above above Visualization is about the month in which is bugs are last modified where resolution is  Invalid and status is closed. From the graph we can see that the most wast created in the month  October having a bug count of 625 and in the month of Febuary having a bug count of 491 are created. This graph is from year 1998 to 2021.
+            **Actual result:** What is the actual result of running the above steps i.e. the bug behavior.
         </li>
-        <li>
-            The next graph is plotted between `bug_count` and `creation_year`, This Visualization refers to the Creation of the Invalid bugs. In year, 1998 the a total of 63 Invalid bugs are created which are least and in the year 2013 a total of 431 bugs are filed which are most.
-        </li>
-        <li>
-            The next graph is plotted between `creation_year` and `bug_id`, The above visualization gives the insight about the bugs when they are created and under which priority the fall like from the above plot we can conclude that the majority of the bugs are filed under the P5 which is having the least priority.
-        </li>
-        <li>
-            The next graph is plotted between `bug_count` and `creation_year`, This Visualization refers to the Creation of the Invalid bugs. In year, 1998 the a total of 63 Invalid bugs are created which are least and in the year 2013 a total of 431 bugs are filed which are most.
-        </li>
-        <li>
-            The next graph is plotted between `bug_count`, `creation_year` and `lastdiffed_year`, In the year 2015 and 2016, a total of 51 bugs are created and in the year of 2020 a total of 51 bugs are modified as well as in the year 2015, 31 bugs are modified. From the year 2013 to 2016 their is a peak in the creation and modification of the bugs and from the year 2003 to 2009 the is a almost a linear downfall and rising of the creation and modification of the bugs.
-        </li>
-        <li>
-            In the month December, 2015 and January, 2016, a total of 51 bugs are created which is the sudden increase. In the September, 2016 to October, 2016 and October, 2016 to  November, 2016 their is a linear increase in the creation of the bugs. From the last_modified graph, in the November, 2020 a total of 51 bugs are last modified mostly in every month a avg of 2 bugs are modified from till 2010 but from the 2011 their is an increase in the modification of the bugs having a avg of 9 bugs.
-        </li>
-        <li>
-            The next graph is plotted between `bug_count`, `creation_week` and `lastdiffed_week`, In the December, 2015 and January, 2016, a total of 51 bugs are created per week which is the sudden increase. In the September, 2016 to October, 2016 and October, 2016 to  November, 2016 their is a linear increase in the creation of the bugs. From the last_modified graph, in the November, 2020 a total of 51 bugs are last modified mostly in every week a avg of 2 or 3 bugs are modified from till 2010 but from the 2011 their is an increase in the modification of the bugs having a avg of 10 to 12 bugs each week.
-        </li>
+    </ol>
 <font>
 
 ```{r Database dissconnect}
