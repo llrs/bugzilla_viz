@@ -786,6 +786,7 @@ If your Bug report is effective, then its chances to get fixed are higher. It to
             **Actual result:** What is the actual result of running the above steps i.e. the bug behavior.
         </li>
     </ol>
+Some of the resolution the are not assigned to any category like fixed, duplicate, etc. by assigning them a category, it will help the developer to ensure the status of the bug and it will make the bug report much efficient.
 <font>
 
 ```{r Database dissconnect}
