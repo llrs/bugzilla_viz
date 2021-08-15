@@ -153,6 +153,7 @@ library(tidyverse)
 library(skimr)
 library(ggplot2)
 library(plotly)
+library(padr)
 ```
 
 ## Connect bugRzilla SQL Database with R
@@ -470,6 +471,7 @@ datatable(head(baa, 5), options = list(scrollX = TRUE))
 bugs_counts <- baa %>%
     arrange(bug_id) %>%
     count(creation_year)
+
 skim(head(bugs_counts))
 ```
 <font size = "4">
@@ -698,28 +700,99 @@ total_data <- total_data %>%
            "creation_week", "lastdiffed_year", "lastdiffed_month", "lastdiffed_week")
 
 #counting total_creation_bug_count
-total_creation_bug_count <- total_data %>%
-    arrange(creation_year) %>%
-    count(bug_id)
+# total_creation_bug_count <- total_data %>%
+#     arrange(bug_id) %>%
+#     count(creation_year)
 
 # joining total_data and total_bug_count
-total_data <- merge(total_creation_bug_count, total_data, by = intersect(names(total_creation_bug_count), 
-                                                         names(total_data)), all = TRUE)
+# total_data <- merge(total_creation_bug_count, total_data, by = intersect(names(total_creation_bug_count), 
+#                                                          names(total_data)), all = TRUE)
 
 #for quick view of the datatypes and the structure of data
 skim(total_data)
 ```
 
 ```{r total_data datatable}
-datatable(head(total_data, 13), options = list(scrollX = TRUE))
+# created bugs per year
+created_year_df <- data.frame(total_data$bug_id, 
+                              total_data$creation_year)
+created_year_df <- aggregate(total_data.bug_id~., 
+                             created_year_df, 
+                             function(x) length(unique(x)))
+colnames(created_year_df) <- c("creation_year", "Bug_count")
+
+# last modified bugs per year
+lastdiffed_year_df <- data.frame(total_data$bug_id, 
+                                 total_data$lastdiffed_year)
+lastdiffed_year_df <- aggregate(total_data.bug_id~., 
+                                lastdiffed_year_df, 
+                                function(x) length(unique(x)))
+colnames(lastdiffed_year_df) <- c("lastdiffed_year", "Bug_count")
+
+# created and last modified bugs per year in single dataframe
+lastdiffed_year_df <- pad(lastdiffed_year_df)
+cre_last_year <- data.frame(created_year_df, 
+                            lastdiffed_year_df)
+
+skim(cre_last_year)
+
+# created bugs per month
+created_month_df <- data.frame(total_data$bug_id, 
+                               total_data$creation_month)
+created_month_df <- aggregate(total_data.bug_id~., 
+                              created_month_df,
+                              function(x) length(unique(x)))
+colnames(created_month_df) <- c("creation_month", "Bug_count")
+
+# last modified bugs per month
+lastdiffed_month_df <- data.frame(total_data$bug_id, 
+                                  total_data$lastdiffed_month)
+lastdiffed_month_df <- aggregate(total_data.bug_id~., 
+                                 lastdiffed_month_df, 
+                                 function(x) length(unique(x)))
+colnames(lastdiffed_month_df) <- c("lastdiffed_month", "Bug_count")
+
+# created and last modified bugs per month in single dataframe
+lastdiffed_month_df <- pad(lastdiffed_month_df)
+cre_last_month <- data.frame(created_month_df, 
+                             lastdiffed_month_df)
+skim(cre_last_month)
+
+# last modified bugs per week
+created_week_df <- data.frame(total_data$bug_id, 
+                              total_data$creation_week)
+created_week_df <- aggregate(total_data.bug_id~., 
+                             created_week_df, 
+                             function(x) length(unique(x)))
+colnames(created_week_df) <- c("creation_week", "Bug_count")
+
+# last modified bugs per week
+lastdiffed_week_df <- data.frame(total_data$bug_id, 
+                                 total_data$lastdiffed_week)
+lastdiffed_week_df <- aggregate(total_data.bug_id~., 
+                                lastdiffed_week_df, 
+                                function(x) length(unique(x)))
+colnames(lastdiffed_week_df) <- c("lastdiffed_week", "Bug_count")
+
+# created and last modified bugs per week in single dataframe
+created_week_df <- pad(created_week_df)
+lastdiffed_week_df <- pad(lastdiffed_week_df)
+cre_last_week <- data.frame(created_week_df, 
+                            lastdiffed_week_df)
+skim(cre_last_week)
 ```
+
 ### Visualizations
 
 ```{r cre_last_year_graph}
-cre_last_year_graph <- total_data %>%
-    ggplot(aes(y = n)) +
-    geom_line(aes(x = creation_year)) +
-    geom_line(aes(x = lastdiffed_year), color="steelblue", linetype="twodash") +
+cre_last_year_graph <- cre_last_year %>%
+    ggplot() +
+    geom_line(aes(x = creation_year, 
+                  y = Bug_count,
+                  colour = "creation_year")) +
+    geom_line(aes(x = lastdiffed_year,
+                  y = Bug_count.1, 
+                  color = "lastdiffed_year")) +
     labs(
         title = "Year in which bugs are Created vs Last modified",
         x = "year",
@@ -729,14 +802,14 @@ cre_last_year_graph <- total_data %>%
 ggplotly(cre_last_year_graph)
 ```
 <font size = 4>
-    In the year `2015` and `2016`, a total of `51` bugs are created and in the year `2020` a total of `51` bugs are modified as well as in the year `2015`, `31` bugs are modified. From the year `2013` to `2016` there is a peak in the creation and modification of the bugs and from the year `2003` to `2009` the is an almost linear downfall and rising in the creation and modification of the bugs.
+    The Time-series graph is the relationship between the `bug_count` and the `year` in which the bug is `created` and `last_modified`. The aim is to check in every year how many bugs are `created` and `last modified`. In the year `2015`, a total of `470` bugs are created and `2015`, `818` bugs are modified which is a sudden peak from the year `2014`. From the year `2007` to `2013` the is a gradual peak but from year `2015` there is a sudden downfall in `2017` from `470` to `172` bugs are created and from `2015` to `2016` there is a sudden downfall from `818` to `287` and again `2018` to `2019` there is an increase in the modification of the bugs from `240` to `595`.
 <font>
 
 ```{r cre_last_month_graph}
-cre_last_month_graph <- total_data %>%
-    ggplot(aes(y = n)) +
-    geom_line(aes(x = creation_month)) +
-    geom_line(aes(x = lastdiffed_month), color="steelblue", linetype="twodash") +
+cre_last_month_graph <- cre_last_month %>%
+    ggplot() +
+    geom_line(aes(x = creation_month, y = Bug_count, colour = "creation_month")) +
+    geom_line(aes(x = lastdiffed_month, y = Bug_count.1, color="lastdiffed_month")) +
     labs(
         title = "Month in which are Created vs Last modified",
         x = "Month",
@@ -747,14 +820,18 @@ ggplotly(cre_last_month_graph)
 ```
 
 <font size = 4>
-    In the month `December 2015` and `January 2016`, a total of `51` bugs are created which is a sudden increase. In the `September 2016` to `October 2016` and `October 2016` to `November 2016` there is a linear increase in the creation of the bugs. From the last_modified graph, in the `November 2020` a total of `51` bugs are last modified mostly in every month an avg of `2` bugs are modified from till `2010` but from the `2011` there is an increase in the modification of the bugs having an avg of `9` bugs.
+    The Time-series graph is the relationship between the `bug_count` and the `month` in which the bug is `created` and `last_modified`. The aim is to check in every week how many bugs are `created` and `last modified`. From `February 2007` to `May 2016` there is increase in the bug creation every alternate month. From the month `May 2016` to `August 2016` there is no bug created which lead to the downfall in the bug creation. And from `June 2019` to `May 2020` the creation of the bugs increases. In the month, `November 2015` to `December 2015` and `April 2019` to `May 2019` there is a sudden increase in the modification of the bugs from `10` to `574` and `16` to `403`. There is also a gap of from `March 2010` to 'May 2010` in this period there is no bug modified.
 <font>
 
 ```{r cre_last_week_graph}
-cre_last_week_graph <- total_data %>%
-    ggplot(aes(y = n)) +
-    geom_line(aes(x = creation_week)) +
-    geom_line(aes(x = lastdiffed_week), color="steelblue", linetype="twodash") +
+cre_last_week_graph <- cre_last_week %>%
+    ggplot() +
+    geom_line(aes(x = creation_week, 
+                  y = Bug_count, 
+                  color="creation_week")) +
+    geom_line(aes(x = lastdiffed_week, 
+                  y = Bug_count.1,
+                  color="lastdiffed_week")) +
     labs(
         title = "Week in which bugs are Created vs Last modified",
         x = "Week",
@@ -764,7 +841,7 @@ cre_last_week_graph <- total_data %>%
 ggplotly(cre_last_week_graph)
 ```
 <font size = 4>
-    In the `December 2015` and `January 2016`, a total of `51` bugs are created per week which is a sudden increase. In the `September 2016` to `October 2016` and `October 2016` to `November 2016` there is a linear increase in the creation of the bugs. From the last_modified graph, in the `November 2020` a total of `51` bugs are last modified mostly in every week an avg of `2` or `3` bugs are modified from till `2010` but from the `2011` there is an increase in the modification of the bugs having an avg of `10` to `12` bugs each week.
+    The Time-series graph is the relationship between the `bug_count` and the `week` in which the bug is `created` and `last_modified`. The aim is to check in every week how many bugs are `created` and `last modified`. In the first week of `May 2016`, a total of `32` bugs are created. In the second week of `December 2015` and `May 2015`, a total of `560` and `395` bugs are modified. There are many weeks in which `0` bugs are created this happened mostly from the year `2017` to `2019` and `2010` to `2013`.
 <font>
 
 # Conclusion
@@ -786,7 +863,9 @@ If your Bug report is effective, then its chances to get fixed are higher. It to
             **Actual result:** What is the actual result of running the above steps i.e. the bug behavior.
         </li>
     </ol>
-Some of the resolution the are not assigned to any category like fixed, duplicate, etc. by assigning them a category, it will help the developer to ensure the status of the bug and it will make the bug report much efficient.
+Some of the resolutions are not assigned to any category like fixed, duplicate, etc. by assigning them a category, It will make the bug report much more efficient report to determine the status of the bug whether the bugs are fixed, Duplicate, etc. 
+
+The Time-series graph is the relationship between the `bug_count` and the `year`, `month` & `week`, with the help of those illustrated graphs one can correlate the ratio of changes to code base with the volume of bugs encountered for that change, this gives us the rate of efficiency developing over time.
 <font>
 
 ```{r Database dissconnect}
