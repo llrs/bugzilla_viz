@@ -26,22 +26,21 @@ body {
 
 ## What is the bugRzilla Package?
 
-BugRzilla is an R package that helps the user to interact with the **Bugzilla** through an API.
+The bugRzilla is an R package that helps the user to interact with the **Bugzilla** through an API. Bugzilla, a bug-tracking system that enterprise-class piece of software that tracks millions of bugs and issues for thousands of organizations around the world.
 
-<font size="3">To learn more, see [bugRzilla](https://github.com/llrs/bugRzilla).</font>
+<font size="3">The source code for this report is available in the [bugRzilla](https://github.com/llrs/bugRzilla) GitHub repository.</font>
 
-## About the bugRzilla Google Summer of COde Project:-
+### About the bugRzilla Google Summer of Code Project:-
 
 bugRzilla is a package to interact with a bugzilla API and specially with R bugzilla. The goal of the project is to help users to submit issues to R Bugzilla.
-
-## About the This Project:-
+The Project can be found at [GSoC'21 project](https://github.com/rstats-gsoc/gsoc2021/wiki/bugRzilla:-Helping-submitting-issues-to-R)
 
 Explore the issues and bugs on the R Bugzilla to make the submission from bugRzilla better. It might help to identify useful patterns for R core or report the status of the R Bugzilla.
 </font>
 
-<font size="3">To learn more, see [bugzilla_viz](https://github.com/llrs/bugzilla_viz).</font>
+<font size="3">The source code for this report is available in the [bugzilla_viz](https://github.com/llrs/bugzilla_viz) GitHub repository.</font>
 
-# Setup Database on your local system
+#  Set up the R Bugzilla Database on your local system
 
 ## Download SQL and MySQL Workbench
 
@@ -50,44 +49,24 @@ To install SQL on Ubuntu one can refer a blog post by [digitalocean](https://www
 To install MySQL workbench on Ubuntu one can refer a blog post by [linuxhint](https://linuxhint.com/installing_mysql_workbench_ubuntu/)
 </font>
 
-## Download R_bugzilla data
+## Download R bugzilla data
 
 <font size ="4">
 <ol>
 <li>
-The R_bugzilla data can be downloaded from  [link](https://bugs.r-project.org/db/R-bugs.sql.xz).
+The R Core have made a dump of the R Bugzilla database available for analysis can be downloaded from [link](https://bugs.r-project.org/db/R-bugs.sql.xz).
 </li>
 <li>
-Since the downloaded data is a zip file so make sure you unzip the file by directly using `extract here` option to the folder you desire before dumping the file
+The downloaded data is a zip file so make sure you unzip the file by directly using `extract here` option to the folder you desire before dumping the file
 which will have an extension `.sql` (eg: R-bugs.sql).
 </li>
 </ol>
 </font>
 
-## Dump downloaded R_bugzilla to MySQL workbench.
+## Dump downloaded R bugzilla to MySQL workbench.
 
 <font size="4">
-Before one import the R_bugzilla SQL file one needs to create the (empty) database from MySQL if it doesn't exist already and the exported SQL don't contain CREATE DATABASE (exported with --no-create-db or -n option), before you can import it.
-
-
-After considering this open your Terminal and run the command: `mysqldump -u my_username -p database_name > output_file_path`
-or you can use mysql using the command: `source <Path>/R-bugs.sql;`
-
-
-The options in use are:
-<ol>
-    <li>
-        The `-u` flag indicates that the MySQL `username` will follow.
-    </li>
-    <li>
-        The `-p` flag indicates we should be prompted for the `password` associated with the above username.
-    `database_name` is of course the exact name of the database to export. eg. `bugRzilla` is the empty database you created.
-    </li>
-    <li>
-        The `>` symbol is a Unix directive for `STDOUT`, which allows Unix commands to output the text results of the issued command to another location. In this case, that output location is a file path, specified by `output_file_path`.
-    </li>
-</ol>
-
+After considering this open your Terminal and run the command: `source <Path>/R-bugs.sql;`
 For Example,
 <ol>
     <li>
@@ -112,7 +91,7 @@ For Example,
                 Once an empty database is created then to dump the SQL data in the database use: `source /home/data/Documents/GSOC/R-bugs.sql;`
             </li>
             <li>
-                To check your database is dumped correctly use: `show tables;`
+                To check the database dump is imported correctly: `show tables;`
 ```{r, eval=F}
 mysql> show tables;
 +---------------------+
@@ -137,23 +116,23 @@ mysql> show tables;
 # bugRzilla Analysis
 
 <font size="4">
-For the connection to the database, I'm using the `dplyr` package, it supports to the widely-used open source databases like `MySQL`.
+For the connection to the database, I'm using the `dplyr` package, it supports connections to the widely-used open source databases like `MySQL`.
 </font>
 
-## The libraries used for the analysis:
+## The package used for the analysis:
 
 ```{r Loading packages}
 # loading packages
-library(dplyr)
-library(dbplyr)
-library(RMySQL)
-library(DBI)
-library(DT)
-library(tidyverse)
-library(skimr)
-library(ggplot2)
-library(plotly)
-library(padr)
+library(dplyr, quietly = TRUE)
+library(dbplyr, quietly = TRUE)
+library(RMySQL, quietly = TRUE)
+library(DBI, quietly = TRUE)
+library(DT, quietly = TRUE)
+library(tidyverse, quietly = TRUE)
+library(skimr, quietly = TRUE)
+library(ggplot2, quietly = TRUE)
+library(plotly, quietly = TRUE)
+library(padr, quietly = TRUE)
 ```
 
 ## Connect bugRzilla SQL Database with R
@@ -172,7 +151,7 @@ con <- dbConnect(
 DBI::dbListTables(con)
 ```
 
-## Data Exploartion of Bugs Table from the Database
+## Data Exploration of Bugs Table from the Database
 ```{r bugs table connection}
 bugs_df <- tbl(con, "bugs")
 #for quick view of the datatypes and the structure of data
@@ -201,7 +180,7 @@ From the above table we can conclude that the few of the columns are having wron
     </li>
 </ol>
 **Note**:The Column `estimated_time` and `remaining_time` only contains the integer value. So, It can't be transformed to Date format datatype.
-Also there are columns which are empty so they are of no use of the analysis like:
+Also there are columns which are empty or they have same value, so it is not interesting for further analysis:
 <ol>
     <li>
         target_milestone
@@ -232,7 +211,9 @@ bugs_df <- bugs_df %>%
     mutate_at(vars("creation_ts", "delta_ts", "lastdiffed", "deadline"), as.Date)
 # Taking the columns which are useful
 bugs_df <- bugs_df %>%
-    select("bug_id", "bug_severity", "bug_status", "creation_ts", "delta_ts", "op_sys", "priority", "resolution", "component_id", "version", "lastdiffed", "deadline")
+    select("bug_id", "bug_severity", "bug_status", "creation_ts", "delta_ts",
+           "op_sys", "priority", "resolution", "component_id", "version", 
+           "lastdiffed", "deadline")
 #for quick view of the datatypes and the structure of data
 skim(bugs_df)
 #showing the `datatable`
@@ -290,14 +271,13 @@ bug_created <- bugs_df %>%
     ggplot(aes(x = creation_ts, y = bug_id)) +
     geom_line(color = "darkorchid4") +
     labs(title = "Bug Creation",
-           subtitle = "The data frame is sent to the plot using pipes",
            y = "Bug ID",
            x = "Date") +
     theme_bw(base_size = 15)
 ggplotly(bug_created)
 ```
 <font size="4">
-    The `Time-series graph` shows that which bug_id was filed in which `month` and `year` and from the `bar graph` we can conclude that in which `year` the most bugs are filed and when one will zoom the graphs, one can see on which date which bug was filed. The most of the Bugs are filled in the month of `January` and `July`.
+    The `Bug Creation Time-series graph` shows that which bug_id was filed in which `month` and `year`. Frome the graph, we can conclude that in which `year` the most bugs are filed and when one will zoom the graphs, one can see on which date which bug was filed. The most of the Bugs are filled in the month of `January` and `July`. There are some unusual blips like the `bug_id = 1, 1605, 1261` is created at `15/02/2010, 15/01/2003, 28/05/2001` respectively.
 </font>
 ```{r Bug last modified graph}
 last_modified <- bugs_df %>%
@@ -311,26 +291,33 @@ ggplotly(last_modified)
 ```
 
 <font size="4">
-    The `Time-series graph` shows that which bug_id was the last update. Most of the bugs are last updated in the month of `January`, `March`, `April`, and `July` and in the year from `2014` to `2016` most bugs are modified and in `2019` to `2020` most bugs are filed.
+    The `Bug Last Modified Time-series graph` shows that which bug_id was the last update. Most of the bugs are last updated in the month of `January`, `March`, `April`, and `July` and in the year from `2014` to `2016` most bugs are modified and in `2019` to `2020` most bugs are filed. we can see that up to `2010` bug IDs were generally last modified in the same order as their creation date. After that, it seems there was more effort to go back to old bugs these issue some of the issue like `bug_id = 997` which was created in the year `2001` was fixed in the year `2019`. similarly the `bug_id = 412` refers to the issue which is assigned to the wontfix category the bug was created in `2000` but was last modified on `2020`. 
 </font>
 
 ```{r Bug changing was last emailed to the cc list graph}
 # Plotting the Time Series graph with the bug_id and delta_ts
 last_modified_graph <- bugs_df %>%
     ggplot(aes(x = delta_ts, y = bug_id)) +
-    geom_point() +
-    labs(title = "Bug changing was last emailed to the cc list",
+    geom_line() +
+    labs(title = "Last emailed to the cc list",
            y = "Bug ID",
            x = "Date") + theme_bw(base_size = 15)
 ggplotly(last_modified_graph)
 ```
 
 <font size="4">
-    The `Time-series graph` shows that which bug_id was the last update. Most of the bugs are last updated in the month of `January`,`March`, `April`, and `July`.
+    The `Bug changing was last emailed to the cc list Time-series graph` shows that which bug_id was the last emailed to the cc list. Most of the bugs are last updated in the month of `January`,`March`, `April`, and `July`.
 </font>
 
+<!-- # ```{r} -->
+<!-- # gg <- bugs_df %>% -->
+<!-- #     filter(resolution == NULL) -->
+<!-- # gg -->
+<!-- # ``` -->
 ```{r Bug Resolution Bar graph}
-Resolution_graph <- ggplot(bugs_df,aes(x = resolution)) +
+Resolution_graph <- bugs_df %>%
+    filter(!resolution == "FIXED") %>%
+    ggplot(aes(x = resolution)) +
     geom_bar() +
     scale_x_discrete(guide = guide_axis(n.dodge = 5)) +
     labs(
@@ -346,9 +333,11 @@ ggplotly(Resolution_graph)
 </font>
 
 ```{r Bug Status Bar graph}
-Status_graph <- ggplot(bugs_df,aes(x = bug_status)) +
+Status_graph <- bugs_df %>%
+    filter(!bug_status == "CLOSED") %>%
+    ggplot(aes(x = bug_status)) +
     geom_bar() +
-    scale_x_discrete(guide = guide_axis(n.dodge = 5)) +
+    scale_x_discrete(guide = guide_axis(n.dodge = 4)) +
     labs(
         title = "Bug Status Bar graph with Bug Count",
         x = "Bug Status",
@@ -373,10 +362,10 @@ ggplotly(Severity_graph)
 ```
 
 <font size="4">
-    The `bug_severity bar-graph` shows which bug_id belongs to which category of bug_severity. Most of the bugs which are filed are normal, some of the bugs that are filled under enhancements are retested for some minor and major features, and a very few bugs are filed under the blocker category.
+    The `bug_severity bar-graph` shows which bug_id belongs to which category of bug_severity. Most of the bugs which are filed are normal, some of the bugs that are filled under enhancements i.e. some new feature requested by the people that people wish it would be included on the R code so they can be retested for the improvement and some minor and major features, and a very few bugs are filed under the blocker category.
 </font>
 
-## Data Exploartion of `bugs` and `Attachments` Table from the Database
+## Data Exploration of `bugs` and `Attachments` Table from the Database
 
 ```{r attachments table connection}
 bugs_attach_df <- tbl(con, "attachments")
@@ -395,7 +384,7 @@ bugs_attach_df <- bugs_attach_df %>%
 
 ### Joining the `bugs` and `attachments` tables
 
-```{r joing of bugs and attachments tables }
+```{r Joining of bugs and attachments tables }
 #joining the `attachments` and `bugs` table
 baa <- merge(bugs_attach_df, bugs_df, by = intersect(names(bugs_attach_df), names(bugs_df)), all = TRUE)
 
@@ -478,44 +467,29 @@ skim(head(bugs_counts))
     **Note: **Here only I've shown the overview of only the 6 rows of bugs_counts Since the whole summary of the data is very large. 
 </font>
 
-```{r 3D bug count gaph}
-# 3D plot to see the number of bug counts per month in a year
-bug_count_graph <- plot_ly(
-    x = bugs_counts$creation_month,
-    y = bugs_counts$creation_year,
-    z = bugs_counts$n,
-    type="scatter3d", 
-    mode="markers", marker = list(size=2)) 
-
-bug_count_graph <- bug_count_graph %>%
-    layout(
-        title = "Bug Counts per month in a year"
-    )
-bug_count_graph
-```
-<font size = 4>
-    The `3D graph` or `surface plot` is about the number of bugs counts per month in a year. The Most number of bug count is `77` in `April 2015` and the minimum bug_count is `2`.
-</font>
+<!-- # ```{r 3D bug count gaph} -->
+<!-- # # 3D plot to see the number of bug counts per month in a year -->
+<!-- # bug_count_graph <- plot_ly( -->
+<!-- #     x = bugs_counts$creation_month, -->
+<!-- #     y = bugs_counts$creation_year, -->
+<!-- #     z = bugs_counts$n, -->
+<!-- #     type="scatter3d",  -->
+<!-- #     mode="markers", marker = list(size=2))  -->
+<!-- #  -->
+<!-- # bug_count_graph <- bug_count_graph %>% -->
+<!-- #     layout( -->
+<!-- #         title = "Bug Counts per month in a year" -->
+<!-- #     ) -->
+<!-- # bug_count_graph -->
+<!-- # ``` -->
+<!-- <font size = 4> -->
+<!--     The `3D graph` or `surface plot` is about the number of bugs counts per month in a year. The Most number of bug count is `77` in `April 2015` and the minimum bug_count is `2`. -->
+<!-- </font> -->
 ```{r Filtering duplicate and closed bugs rows}
 #filtering the data where resolution is Duplicate
 res_dupli <- baa %>%
     filter(resolution == "DUPLICATE" & bug_status == "CLOSED")
 ```
-
-```{r Duplicate month graph}
-# plotting graph with creation month where resolution is Duplicate
-dupli_month_graph <- ggplot(res_dupli) +
-    geom_bar(aes(x = creation_month)) +
-    labs(
-        title = "Months in which Duplicate Bugs are Filed",
-        x = "Months",
-        y = "Bug_Count"
-    )
-ggplotly(dupli_month_graph)
-```
-<font size = 4>
-    The above bar graph is about the month in which is bugs are filed where resolution is `Duplicate`. From the graph, we can see that most were filled in the month of `August` with a bug count of `12` and the least bugs are filled in the month of `December` with a bug count of `2`. This graph is from the year `2006` to `2021`.
-<font>
 
 ```{r Duplicate Year graph}
 # plotting graph with creation year where resolution is Duplicate
@@ -530,7 +504,7 @@ ggplotly(duplicate_year)
 ```
 
 <font size = 4>
-    The above Visualization is about the year in which is bugs are filed where resolution is `Duplicate`. From the graph, we can see that the most ware filled in the year `2012` having a bug count of `11` and the least bugs are filled in the year `2007`, `2008` and `2019` having a bug count of `1`. This graph is from the year `2006` to `2021`.
+    The above Visualization is about the year in which is bugs are filed where resolution is `Duplicate`. From the graph, we can see that the frequency of Duplicate bugs increased from one or two per year in `2006-08` to a peak in `2012` of `11` per year, but since `2017` has been less than 4 per year. From this we can conclude that duplicate bugs are not a big cause for concern as the number per year is so small.
 <font>
 
 ```{r Filtering fixed and closed bugs rows}
@@ -557,38 +531,23 @@ ggplotly(fixed_year_graph)
 
 ```{r Fixed month graph} 
 # plotting graph with creation year where resolution is Fixed
-fixed_month_graph <- ggplot(res_fixed) +
+fixed_closed_month_graph <- ggplot(res_fixed) +
     geom_bar(aes(x = lastdiffed_month)) +
     labs(
-        title = "Month in which fixed bugs are last modified",
-        x = "Month ",
+        title = "Month in which fixed and closed bugs are last modified",
+        x = "Month",
         y = "Bug_Count"
     )
-ggplotly(fixed_month_graph)
+ggplotly(fixed_closed_month_graph)
 ```
 <font size = 4>
     The `bar graph` is about the month in which is bugs are last modified where the resolution is `Fixed`. From the graph, we can see that the most wast last modified in the month `December` having a bug count of `559` and in the month of `September` having a bug count of `228` are least modified. This graph is from the year `1998` to `2021`.
 <font>
 
-```{r Invalid bugs graph}
+```{r Invaild bugs graph}
 res_invalid <- baa %>%
     filter(resolution == "INVALID" & bug_status == "CLOSED")
 
-invalid_graph <- ggplot(res_invalid) +
-    geom_bar(aes(x = creation_month)) +
-    labs(
-        title = "Month in which invalid bugs are filed",
-        x = "Month ",
-        y = "Bug_Count"
-    )
-ggplotly(invalid_graph)
-```
-
-<font size = 4>
-    The `bar graph` is about the month in which is bugs are last modified where `resolution` is `Invalid` and `status` is `closed`. From the graph, we can see that the most were created in the month `October` having a bug count of `625` and in the month of `February` having a bug count of `491` are created. This graph is from the year `1998` to `2021`.
-<font>
-
-```{r Invaild year graph}
 invaild_year_graph <- ggplot(res_invalid) +
     geom_bar(aes(x = creation_year)) +
     labs(
@@ -621,7 +580,7 @@ ggplotly(priority_graph)
 
 ## Data Exploration of all the tables in the database
 
-### Data Exploartion of bugs_mod Table from the Database
+### Data Exploration of bugs_mod Table from the Database
 
 ```{r bugs mod connection}
 bugs_mod_df <- tbl(con, "bugs_mod")
@@ -636,7 +595,7 @@ skim(bugs_mod_df)
 datatable(head(bugs_mod_df, 5), options = list(scrollX = TRUE))
 ```
 
-### Data Exploartion of longdescs Table from the Database
+### Data Exploration of longdescs Table from the Database
 
 ```{r longdescs connection}
 longdescs_df <- tbl(con, "longdescs")
@@ -650,8 +609,50 @@ skim(longdescs_df)
 #showing the baa i.e `longdescs_df` table in the `datatable`
 datatable(head(longdescs_df, 5), options = list(scrollX = TRUE))
 ```
+<font size="4">
+The brief description about the columns as follows:
+<ol>
+    <li>
+        **comment_id: **An integer comment ID.
+    </li>
+    <li>
+        **bug_id: **The ID of the bug that this comment is on.
+    </li>
+    <li>
+        **who: **who created the comment.
+    </li>
+    <li>
+        **bug_when: **When the bug was created.
+    </li>
+    <li>
+        **work_time: **Adds this many hours to the "Hours Worked" on the bug. If you are not in the time tracking group, this value will be ignored.
+    </li>
+    <li>
+        **thetext: **The actual text of the comment.
+    </li>
+    <li>
+        **isprivate: **`true` if this comment is private (only visible to a certain group called the "insidergroup"), `false` otherwise.
+    </li>
+    <li>
+        **already_wrapped: **If this comment is stored in the database word-wrapped, this will be `1`. `0` otherwise.
+    </li>
+    <li>
+        **type: **The time at which information about this bug changing was last emailed to the cc list.
+    </li>
+    <li>
+        **extra_data: **If this comment is having any extra data in the database, this will be `1`. `0` otherwise.
+    </li>
+    <li>
+        **is_markdown: **`true` if this comment needs Markdown processing; `false` otherwise.
+    </li>
+</ol>
+</font>
 
-### Data Exploartion of bugs_activity Table from the Database
+<font size = 4>
+    From the `longdescs_df data table`, we can see that most of the columns containing the same value i.i `0` which makes it interesting for the analysis. There is only few columns which can be considered but they are also present in other data-tables for example, `Comment_id`, `bug_id`, `who` which is also `submitter_id`, `bug_when` which is also know `creation_ts`. So there is no use to make analysis on them again.
+<font>
+
+### Data Exploration of bugs_activity Table from the Database
 
 ```{r loading bugs_activity table}
 bugs_act_df <- tbl(con, "bugs_activity")
@@ -660,8 +661,26 @@ bugs_act_df <- as.data.frame(bugs_act_df)
 #for quick view of the datatypes and the structure of data
 skim(bugs_act_df)
 ```
+<font size="4">
+The brief description about the columns as follows:
+<ol>
+    <li>
+        **fieldid: **Unique numeric identifier for field
+    </li>
+    <li>
+        **added: **Values added, if any (comma-separated if multiple)
+    </li>
+    <li>
+        **removed: **`Values removed, if any (comma-separated if multiple)
+    </li>
+</ol>
+</font>
 
-### Joing all the the data tables
+<font size = 4>
+    From the `bugs_activity data table`, we can see that most of there is only few columns which can be considered but they are also present in other data-tables for example, `bug_id`, `who` which is also `submitter_id`, `bug_when` which is also know `creation_ts`. So there is no use to make analysis on them again. 
+<font>
+
+### Joining all the the data tables
 
 ```{r joining all the data tables}
 #joining all the data tables
@@ -714,24 +733,24 @@ skim(total_data)
 
 ```{r total_data datatable}
 # created bugs per year
-created_year_df <- data.frame(total_data$bug_id, 
+created_year_df <- data.frame(total_data$bug_id,
                               total_data$creation_year)
-created_year_df <- aggregate(total_data.bug_id~., 
-                             created_year_df, 
+created_year_df <- aggregate(total_data.bug_id~.,
+                             created_year_df,
                              function(x) length(unique(x)))
 colnames(created_year_df) <- c("creation_year", "Bug_count")
 
 # last modified bugs per year
-lastdiffed_year_df <- data.frame(total_data$bug_id, 
+lastdiffed_year_df <- data.frame(total_data$bug_id,
                                  total_data$lastdiffed_year)
-lastdiffed_year_df <- aggregate(total_data.bug_id~., 
-                                lastdiffed_year_df, 
+lastdiffed_year_df <- aggregate(total_data.bug_id~.,
+                                lastdiffed_year_df,
                                 function(x) length(unique(x)))
 colnames(lastdiffed_year_df) <- c("lastdiffed_year", "Bug_count")
 
 # created and last modified bugs per year in single dataframe
 lastdiffed_year_df <- pad(lastdiffed_year_df)
-cre_last_year <- data.frame(created_year_df, 
+cre_last_year <- data.frame(created_year_df,
                             lastdiffed_year_df)
 
 skim(cre_last_year)
@@ -756,28 +775,27 @@ colnames(lastdiffed_month_df) <- c("lastdiffed_month", "Bug_count")
 lastdiffed_month_df <- pad(lastdiffed_month_df)
 cre_last_month <- data.frame(created_month_df, 
                              lastdiffed_month_df)
-skim(cre_last_month)
 
 # last modified bugs per week
-created_week_df <- data.frame(total_data$bug_id, 
+created_week_df <- data.frame(total_data$bug_id,
                               total_data$creation_week)
-created_week_df <- aggregate(total_data.bug_id~., 
-                             created_week_df, 
+created_week_df <- aggregate(total_data.bug_id~.,
+                             created_week_df,
                              function(x) length(unique(x)))
 colnames(created_week_df) <- c("creation_week", "Bug_count")
 
 # last modified bugs per week
-lastdiffed_week_df <- data.frame(total_data$bug_id, 
+lastdiffed_week_df <- data.frame(total_data$bug_id,
                                  total_data$lastdiffed_week)
-lastdiffed_week_df <- aggregate(total_data.bug_id~., 
-                                lastdiffed_week_df, 
+lastdiffed_week_df <- aggregate(total_data.bug_id~.,
+                                lastdiffed_week_df,
                                 function(x) length(unique(x)))
 colnames(lastdiffed_week_df) <- c("lastdiffed_week", "Bug_count")
 
 # created and last modified bugs per week in single dataframe
 created_week_df <- pad(created_week_df)
 lastdiffed_week_df <- pad(lastdiffed_week_df)
-cre_last_week <- data.frame(created_week_df, 
+cre_last_week <- data.frame(created_week_df,
                             lastdiffed_week_df)
 skim(cre_last_week)
 ```
@@ -847,25 +865,13 @@ ggplotly(cre_last_week_graph)
 # Conclusion
 
 <font size = 4>
-    In this project, I've visualized the bugRzilla database creating various visualization. The major graphs are the `time-series graph` which is the relationship of `bug_id`, `creation_ts`, `delta_ts`, and `last_modified` to show when the bug was created, last modified & last email to the cc list, last modified respectively. Some time-series graphs can help us to see in which week, month, the year most bugs are created.
+    In this project, I've visualized the bugRzilla database creating various visualization. The major graphs are the `time-series graph` which illustrates the relationship of `bug_id`, `creation_ts`, `delta_ts`, and `last_modified` to show when the bug was created, last modified & last email to the cc list, last modified respectively. Some time-series graphs can help us to see in which week, month, the year most bugs are created.
 
-The `bar` graph which is the relationship between the `bug_count`, `bug_status`, `bug_severity`, `resolution` to check the status like closed, new, etc, how severe the bug is like whether the bug is critical, major, etc and the resolution of the bug-like if the bug is in a closed state, e.g. FIXED, DUPLICATE, etc.
+The `bar graph` plots the relationship between the `bug_count`, `bug_status`, `bug_severity`, `resolution` to check the status like closed, new, etc, how severe the bug is like whether the bug is critical, major, etc and the resolution of the bug-like if the bug is in a closed state, e.g. FIXED, DUPLICATE, etc.
 
-If your Bug report is effective, then its chances to get fixed are higher. It totally depends upon how effectively one reports it. Like some values are left and that should not be null to report the bugs effectively. For example, the `Priority`, `bug severity` even the `resolution` of the bugs should be specified. From the bugs data table, we can see that the column `bug_file_loc` is mostly empty like there should be proper reporting where the bug occurred. Event `Priority` is generally set from `P1` to `P5.` `P1` as “fix the bug with the highest priority” and `P5` as ” Fix when time permits” There are many rows where the priority is not mentioned which in turns takes more time by the developer to set the priority. At last in the description of the bug, these points should be there which can create the report much effective i.e.
-    <ol>
-        <li>
-            **Reproduce steps:** Clearly, mention the steps to reproduce the bug.
-        </li>
-        <li>
-            **Expected result:** How the application should behave on the above-mentioned steps.
-        </li>
-        <li>
-            **Actual result:** What is the actual result of running the above steps i.e. the bug behavior.
-        </li>
-    </ol>
+The trend to be observed between the number of bugs reported on a certain epoch versus their respective resolution date is that the higher the number of bugs the longer is the patching period. 
 Some of the resolutions are not assigned to any category like fixed, duplicate, etc. by assigning them a category, It will make the bug report much more efficient report to determine the status of the bug whether the bugs are fixed, Duplicate, etc. 
-
-The Time-series graph is the relationship between the `bug_count` and the `year`, `month` & `week`, with the help of those illustrated graphs one can correlate the ratio of changes to code base with the volume of bugs encountered for that change, this gives us the rate of efficiency developing over time.
+The weekly, monthly, and the annual plots support the aforementioned trend. While the bug count can be considered a prominent feature influencing the lastdiffed date, we cannot however ignore the other meta data comprising a bug report, e. g. the severity, number and nature of attachments, and some non quantifiable features like the effectiveness of bug description, and also, the number of bugs assigned to the same person also effects the time taken to patch the bugs.
 <font>
 
 ```{r Database dissconnect}
