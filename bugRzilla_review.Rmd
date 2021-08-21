@@ -38,7 +38,7 @@ The Project can be found at [GSoC'21 project](https://github.com/rstats-gsoc/gso
 Explore the issues and bugs on the R Bugzilla to make the submission from bugRzilla better. It might help to identify useful patterns for R core or report the status of the R Bugzilla.
 </font>
 
-<font size="3">The source code for this report of bugRzilla is available in the [bugzilla_viz](https://github.com/llrs/bugzilla_viz) GitHub repository.</font>
+<font size="3">The source code for this report is available in the [bugzilla_viz](https://github.com/llrs/bugzilla_viz) GitHub repository.</font>
 
 #  Set up the R Bugzilla Database on your local system
 
