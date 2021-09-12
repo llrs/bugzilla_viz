@@ -428,7 +428,7 @@ fgsea::plotEnrichment(r_core, stats = w2) + labs(title = "R core commenters")
 
 The users that comment most are from the R core.
 
-```{r}
+```{r comments-core}
 db_comments %>% 
   merge(db_bugs4, by = "bug_id") %>% 
   group_by(bug_id) %>% 
@@ -471,11 +471,11 @@ db_comments %>%
 
 As expected the R core has yet to comment on NEW bug reports but otherwise it doesn't seem that there is some problem with comments on specific categories that might reduce the R core involvement with a specific category.
 
-```{r}
+```{r bug_status}
 db_activity_bugs <- db_activity2 %>% 
   merge(db_bugs4, by = "bug_id", all.y = TRUE)
 
-a1 <- db_activity_bugs %>% 
+closing_time <- db_activity_bugs %>% 
   group_by(bug_id) %>% 
   summarize(
     creation_t = unique(creation_ts),
@@ -485,21 +485,93 @@ a1 <- db_activity_bugs %>%
   mutate(diff_t = if_else(closed_t < as.difftime(0, units = "hours") | is.na(closed_t), as.difftime("NA", units = "hours"), diff_t)) %>% 
   mutate(closed = !is.na(diff_t == 0))
 
-# Some -Inf on closed_t
-a1 %>%   
+closing_time %>%   
   ggplot() +
   geom_point(aes(x = creation_t, y = bug_id), col = "green", shape = 17, size = 1) +
-  geom_point(aes(x = closed_t, y = bug_id), col = "red", size = 1, data = . %>% filter(closed), alpha = 0.25)
-
-# Time since opened and not closed
-a1 %>% filter(!closed) %>% 
-  mutate(b = difftime(as.Date("2021/03/25"), creation_t, units = "hours")) %>% pull(b) %>% quantile()
-# Which types of question tend to be left open?
+  geom_point(aes(x = closed_t, y = bug_id), col = "red", size = 1, data = . %>% filter(closed), alpha = 0.25) +
+  scale_x_datetime(date_breaks = "1 year", date_labels = "%Y")
 ```
 
+We can observe the rist of bug reports and the closing efforts. 
+On mid 2014 there was some effort to close issues, and a big effort to close old issues on 2015-2016. 
+More recently the effect of ["R Can Use Your Help: Reviewing Bug Reports"](https://developer.r-project.org/Blog/public/2019/10/09/r-can-use-your-help-reviewing-bug-reports/index.html) is also appreciable but the closing effort seems more organic as it spans almost all 2020 closing old bug reports. 
 
+```{r bug-closed-month}
+closing_time %>%   
+  filter(closed) %>% 
+  group_by(month = format(closed_t, "%Y-%m")) %>% 
+  count() %>% 
+  ggplot() +
+  geom_col(aes(x = month, y = n)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(expand = expansion()) +
+  labs(x = element_blank(), y = "Closed issues")
+```
 
-```{r disconnect,}
+The big spike of near 500 closed issues on 2015-12 (presumably automatic), distorts a bit the graphic.
+
+```{r bug-closed-month2}
+closing_time %>%   
+  filter(closed) %>% 
+  group_by(month = format(closed_t, "%Y-%m")) %>% 
+  count() %>% 
+  ggplot() +
+  geom_col(aes(x = month, y = n)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  coord_cartesian(ylim = c(0, 65)) +
+  scale_y_continuous(expand = expansion()) +
+  labs(x = element_blank(), y = "Closed issues")
+```
+
+With near to 20 bugs closed each month, the question is which ones are closed faster?
+Perhaps some kind of resolution or status of bugs are closed sooner?
+
+```{r time-resolution-severity-closed}
+db_bugs4 %>% 
+  merge(closing_time, by = "bug_id", all.x = TRUE, all.y = FALSE) %>% 
+  filter(closed) %>% 
+  group_by(resolution, bug_severity) %>% 
+  summarize(f = as.numeric(median(diff_t))) %>% 
+  ungroup() %>% 
+  ggplot() +
+  geom_tile(aes(bug_severity, resolution, fill = f)) +
+  scale_fill_viridis_c(trans = "log10") +
+  labs(x = "Severity", y = "Resolution", fill = "h", 
+       title = "Median time till closing the issue")
+```
+
+Usually it takes some time to close a bug report as duplicate. 
+Maybe this is because one needs some familiarity with the previous reported bugs.
+
+Which bugs are harder to close or need more information?
+
+```{r time-opened}
+db_bugs4 %>% 
+  merge(closing_time, by = "bug_id", all.x = TRUE, all.y = FALSE) %>% 
+  filter(!closed) %>% 
+  mutate(ct = difftime(as.Date("2021/03/25"), creation_t, units = "hours")) %>% 
+  group_by(resolution, bug_severity) %>% 
+  summarize(f = as.numeric(median(ct)), n = n()) %>% 
+  ungroup() %>% 
+  filter(n > 5) %>% 
+  ggplot() +
+  geom_tile(aes(bug_severity, resolution, fill = f)) +
+  scale_fill_viridis_c(trans = "log10") +
+  labs(x = "Severity", y = "Resolution", fill = "h", 
+       title = "Median time of open bug report")
+```
+
+Bugs without resolution described as major are more time open, presumably because they take more time to fix too.
+Next are enhancements, which makes sense that enhancements take some time till they are incorporated to R source code. 
+Perhaps is the effect of the recent call to help on Bugzilla but the normal bug reports seem to be the ones less time open. 
+
+# Conclusion 
+
+```{r disconnect, include=FALSE}
 dbDisconnect(db_bugzilla)
 ```
 
+
+There is room for improvements on the bug reporting process from users:
+- Include a patch
+- Give details of the kind of the bug or at least not always using the default options of the tracker. 
