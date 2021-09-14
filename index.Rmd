@@ -2,7 +2,11 @@
 title: "Exploring the R bugzilla"
 author: "Lluís Revilla Sancho"
 date: "8/28/2021"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true 
+    code_folding: hide
 self_contained: false
 ---
 
@@ -36,7 +40,7 @@ library("RMySQL")
 DBI::dbListTables(db_bugzilla)
 ```
 
-Now that we know what are the tables let's prepare to explore and visualize the content:
+First an initial exploration of the database and bug reports:
 
 ```{r setup-viz}
 library("ggplot2")
@@ -61,14 +65,18 @@ db_bugs %>%
     guides(color = "none")
 ```
 
-The warning tells us that there are some bugs without date of creation.
-There are also three points that do not follow the general expectations:
+There are also three points that do not follow the general expectations[^1].
+
+[^1]: If you explore the code, the warning tells us that there are some bugs without date of creation.
+
+# Exploring outliers
 
 ```{r special-bugs}
 special_bugs <- c(1, 1261, 1605)
 ```
 
-First bug is testing bugzilla! 
+These three odd bug reports need some exploration.
+If we look at the bug report of the first bug you'll realize the first bug is testing bugzilla!
 This together with the bugs with missing creation date indicates that some data is wrong.
 But let's explore them:
 
@@ -76,18 +84,18 @@ But let's explore them:
 db_bugs %>% 
   count(reporter, sort = TRUE) %>% 
   head() %>% 
-  knitr::kable()
-db_bugs %>% 
-  filter(reporter == 2) %>% 
-  select(bug_id, creation_ts) %>% 
-  filter(bug_id == min(bug_id) | bug_id == max(bug_id))
+  knitr::kable(align = "c")
 ```
 
 From approximately `r as.Date(min(db_bugs$creation_ts[db_bugs$bug_id != 2], na.rm = TRUE))` bugs are filled on Bugzilla.
 Previously they were reported on Jitterbug (clear if you looks on the website who reported that bug, for example [3](https://bugs.r-project.org/show_bug.cgi?id=3)).
 
-Not clear what happens on [1261](https://bugs.r-project.org/show_bug.cgi?id=1261) or [1605](https://bugs.r-project.org/show_bug.cgi?id=1605). 
-But it seems that there were some [troubles migrating](https://stat.ethz.ch/pipermail/r-devel/2010-March/056954.html) the bugs and it is not completely clear when the switch happened. 
+Not clear what happens on [1261](https://bugs.r-project.org/show_bug.cgi?id=1261) or [1605](https://bugs.r-project.org/show_bug.cgi?id=1605).
+
+# Jitterbug and bugzilla
+
+The R project moved from Jitterbug to Bugzilla, so the reporting of bugs changed too.
+There were some [troubles migrating](https://stat.ethz.ch/pipermail/r-devel/2010-March/056954.html) the bugs and it is not completely clear when the switch happened.
 
 ```{r databases-storage}
 db_bugs2 <- db_bugs %>% 
@@ -109,9 +117,7 @@ db_bugs2 %>%
   labs(fill = "Bugs", x = "Status", y = "Resolution")
 ```
 
-Looking at the bugs filled on each issue tracker we can observe some new resolutions to bugs: SPAM :( 
-But also new status Verified, Unconfirmed, Resolved, Confirmed.
-We can check out the missing issues and spam to see what happened:
+Looking at the bugs filled on each issue tracker we can observe some new resolutions to bugs: SPAM :( But also new status Verified, Unconfirmed, Resolved, Confirmed. We can check out the missing issues and spam to see what happened:
 
 ```{r missing}
 missing_ids <- (db_bugs2$bug_id - lag(db_bugs2$bug_id) -1)
@@ -136,12 +142,12 @@ There are two waves of missing or spam bugs on Jitterbug and later less problems
 It could also be that there were some problem migrating bugs from Jitterbug and some issues were not correctly moved, or simply that some issues are omitted due to the [security vulnerability policy](https://www.r-project.org/bugs.html) to omit them from appearing on the database.
 
 But I think that the wave of spam or missing on Bugzilla that is the same day a new SPAM policy was enacted (vertical line) shows that these numbers show mostly spam.
-Clearly there were like two waves of spam on Jitterbug, and since the move to Bugzilla there has been some constant but low volume spam issue compared to Jitterbug. 
-After the last measure to prevent spam was set very few bugs reports considered spam have been filled. 
+Clearly there were like two waves of spam on Jitterbug, and since the move to Bugzilla there has been some constant but low volume spam issue compared to Jitterbug.
+After the last measure to prevent spam was set very few bugs reports considered spam have been filled.
 
-The measure was to ask permission for an account, started where the vertical line is,  has worked very well. 
-There seem to be less missing/spam bugs lately. 
-Given all that we will omit the spam bugs from now on. 
+The measure was to ask permission for an account, started where the vertical line is, has worked very well.
+There seem to be less missing/spam bugs lately.
+Given all that we will omit the spam bugs from now on.
 They are not really bug reports nor report or have something of quality to learn from them.
 
 ```{r real-bugs}
@@ -157,7 +163,7 @@ db_bugs3 %>%
   labs(x = "Severity", y = "Status", fill = "Bugs")
 ```
 
-Removing this spam messages show that either on Jitterbug there was no way to classify bugs or that this information was lost. 
+Removing this spam messages show that either on Jitterbug there was no way to classify bugs or that this information was lost.
 
 ```{r real-bugs-bugzilla}
 db_bugs4 <- db_bugs3 %>% 
@@ -191,9 +197,9 @@ db_attachments_bugs %>%
   labs(fill = "Reported on")
 ```
 
-Most bug reports don't have attachments! 
+Most bug reports don't have attachments!
 So this means that they are just some reporting of a problem which the R core then needs to understand and figure a solution.
-Surprisingly some bug reports have many attachments, this might be related to a refinement on patches or exploring several options. 
+Surprisingly some bug reports have many attachments, this might be related to a refinement on patches or exploring several options.
 
 ```{r attachemnt-reported}
 db_attachments_bugs %>% 
@@ -204,11 +210,14 @@ db_attachments_bugs %>%
             reported_on = reported_on) %>% 
   ungroup() %>% 
   count(reported_on, have_attachments, sort = TRUE) %>%
-  knitr::kable()
+  knitr::kable(align = "c")
 ```
 
-Proportionally there are more attachments on bugzilla.   
-Perhaps some attachments weren't moved from Jitterbug, but it seems that the large difference might be from an increase in participation and patches proposed on Bugzilla. 
+Proportionally there are more attachments on bugzilla.
+
+# Attachments
+
+Perhaps some attachments weren't moved from Jitterbug, but it seems that the large difference might be from an increase in participation and patches proposed on Bugzilla.
 
 ```{r attachments-status}
 attachments_type <- db_attachments_bugs %>% 
@@ -233,8 +242,8 @@ attachments_type %>%
        x = "Severity", y = "Status") 
 ```
 
-Looking at which severity has more attachments and which status, is kind of confusing. 
-Probably the attachment is more related to who is reporting the bug or people proposing solutions. 
+Looking at which severity has more attachments and which status, is kind of confusing.
+Probably the attachment is more related to who is reporting the bug or people proposing solutions.
 
 What is the time between posting the bug and the attachments?
 
@@ -256,13 +265,13 @@ attachment_in <- attachment_time %>%
 attachment_time %>% 
   count(mt0) %>% 
   mutate(p = round(n/sum(n)*100, 2)) %>% 
-  knitr::kable(col.names = c("Attachment on  opening", "Bugs", "%"))
+  knitr::kable(col.names = c("Attachment on  opening", "Bugs", "%"), align = "c")
 ```
 
-Bugs with attachments on opening are almost 50% and when not on opening there is an attachment in around `r `attachment_in` hours.
+Bugs with attachments on opening are almost 50% and when not on opening there is an attachment in around `r`attachment_in\` hours.
 
-Exploring some issues like [7022](https://bugs.r-project.org/show_bug.cgi?id=7022) it seems that changes on tagging and notes is posted as comments. 
-If we want to look at comments and time between changes this will distort the results, even more, we want to improve bug reports for Bugzilla not jitterbug. 
+Exploring some issues like [7022](https://bugs.r-project.org/show_bug.cgi?id=7022) it seems that changes on tagging and notes is posted as comments.
+If we want to look at comments and time between changes this will distort the results, even more, we want to improve bug reports for Bugzilla not jitterbug.
 So from now we will only work with Bugzilla bugs.
 
 ```{r attachment-type-file}
@@ -272,11 +281,11 @@ db_attachments_bugs %>%
   group_by(ispatch) %>% 
   count(mimetype, sort = TRUE) %>% 
   head(8) %>% 
-  knitr::kable(row.names = FALSE)
+  knitr::kable(row.names = FALSE, align = "c")
 ```
 
 Most files attached are not patches, even not all plain text files attached are patches.
-They might be packages showing the issues, plots where the deffect is apparent or files with data for examples. 
+They might be packages showing the issues, plots where the deffect is apparent or files with data for examples.
 
 ```{r attachment-type-people}
 db_attachments_bugs %>% 
@@ -291,10 +300,14 @@ db_attachments_bugs %>%
 ```
 
 Most people submit just one file and few submit more than file.
-Of those there are very few patches (as detected by the system)
-This might suggest that people either don't find bugs easy to patch, (or know how to do that) or they provide patches through other ways (r-devel mailing list for instance).
+Of those there are very few patches (as detected by the system) This might suggest that people either don't find bugs easy to patch, (or know how to do that) or they provide patches through other ways (r-devel mailing list for instance).
 
-```{r activity} 
+# Activity on bugs reports
+
+The bugs reports receive some attention and change if people performs some action through the Bugzilla tracker.
+If we look at the changes and addition to bugs we might get some idea of what is needed or missing from bug reports:
+
+```{r activity}
 db_activity <- tbl(db_bugzilla, "bugs_activity") %>% 
   collect() %>% 
   mutate(bug_when = as.POSIXct(bug_when, tz = "UTC", format = "%Y-%m-%d %H:%M:%OS")) %>% 
@@ -344,7 +357,7 @@ db_activity2 %>%
 ```
 
 Changes on bug are on status, or people subscribing (usually via commenting on the issue).
-The ones that users can work to improve and provide better version description and title (Summary), followed by the severity, assigning to the right group, choosing the right OS, component and hardware. 
+The ones that users can work to improve and provide better version description and title (Summary), followed by the severity, assigning to the right group, choosing the right OS, component and hardware.
 
 ```{r bugs-activity}
 db_activity2 %>% 
@@ -356,7 +369,7 @@ db_activity2 %>%
   labs(x = "Activity", y = "Bugs", title = "Activity on bugs")
 ```
 
-Usually issues receive around 4 modifications, probably status, CC and resolution and version. 
+Usually issues receive around 4 modifications, probably status, CC and resolution and version.
 Let's check which are the fields most often changed:
 
 ```{r bugs-common-activity}
@@ -373,10 +386,14 @@ db_activity2 %>%
     vapply( paste, collapse = ", ", FUN.VALUE = character(1L))
 ```
 
-Adding someone as CC usually means that they have commented. 
-So surprisingly some change resolution but no one else comments. 
+Adding someone as CC usually means that they have commented.
+So surprisingly some change resolution but no one else comments.
 While 3 of the 5 more common activities involve adding someone as CC.
 So how many comments are on issues?
+
+# Comments on bug reports
+
+Looking at the comments on bug reports we we'll see how much exchange is there usually:
 
 ```{r comments}
 db_comments <- db_bugzilla %>% 
@@ -411,9 +428,8 @@ db_comments %>%
   labs(x = "Users", y = "Bugs")
 ```
 
-Most comments on bugs are from 2 different people. 
+Most comments on bugs are from 2 different people.
 Presumably one is the author and another user (here the initial opening comment is not accounted for).
-
 
 ```{r users-core}
 r_core <- c(3, 5, 9, 18, 19, 28, 34, 54, 137, 151, 216, 308, 413, 420, 1249, 
@@ -452,7 +468,7 @@ On all the other seems to be above 50% of comments from the R core.
 
 ```{r status-resolution}
 db_comments %>% 
-  merge(db_bugs3, by = "bug_id") %>% 
+  merge(db_bugs4, by = "bug_id") %>% 
   group_by(bug_id) %>% 
   summarize(author = ifelse(any(who %in% r_core), "R core", "Others"),
             bug_status = unique(bug_status[!is.na(bug_status)]),
@@ -471,7 +487,62 @@ db_comments %>%
 
 As expected the R core has yet to comment on NEW bug reports but otherwise it doesn't seem that there is some problem with comments on specific categories that might reduce the R core involvement with a specific category.
 
-```{r bug_status}
+```{r comments-speed}
+comments_time <- db_comments %>% 
+  merge(db_bugs4, by = "bug_id", all = TRUE) %>% 
+  mutate(diff_t = difftime(bug_when, creation_ts, units = "hours")) %>% 
+  group_by(bug_id) %>% 
+  arrange(diff_t) %>% 
+  mutate(n = seq_len(n())) %>% 
+  ungroup() %>% 
+  filter(n != 1) %>% 
+  mutate(n = n-1)
+
+ggplot(comments_time) +
+  geom_line(aes(n, diff_t, col = bug_id, group = bug_id)) +
+  scale_y_continuous(expand = expansion()) +
+  scale_x_continuous(expand = expansion())
+```
+
+Looking at the when comments happens it seems that there are two groups of issues.
+One group where it takes long time to receive the first comment.
+And another group where lots of comments pour in the first hours and much later a some more comments.
+
+```{r table-comments-time}
+comments_time %>% 
+  group_by(n_comments = n) %>% 
+  summarize(median = median(diff_t, na.rm = TRUE),
+            sd = sd(diff_t, na.rm = TRUE),
+            n = n()) %>% 
+  ungroup() %>% 
+  head() %>% 
+  knitr::kable(align = "c")
+```
+
+The first comment of an issue is usually quite fast but there are many bugs that their first comment is around a year later. 
+```{r comments-authors}
+comments_time %>% 
+  group_by(bug_id) %>% 
+  summarize(n_who = n_distinct(who), n_comments = n()) %>% 
+  ungroup() %>% 
+  ggplot() +
+  geom_count(aes(n_who, n_comments)) +
+  scale_y_continuous(expand = expansion()) +
+  scale_x_continuous(expand = expansion()) +
+  # scale_size(trans = "log10", range = c(0, 5)) +
+  labs(size = "Bugs", x = "Authors", y = "Comments") +
+  geom_abline(slope = 1, intercept = 0, col = "red")
+```
+
+Comments on bugs are usually from a small number of authors. 
+But often they exchange around 10 comments. 
+
+# Closing bug reports
+
+One of the current tasks the R core does is closing and replying to issues.
+Issues might get closed for a variety of reasons as we have seen, but maybe there is some hint to something bugRzilla could help:
+
+```{r bug_status, warning=FALSE}
 db_activity_bugs <- db_activity2 %>% 
   merge(db_bugs4, by = "bug_id", all.y = TRUE)
 
@@ -489,12 +560,13 @@ closing_time %>%
   ggplot() +
   geom_point(aes(x = creation_t, y = bug_id), col = "green", shape = 17, size = 1) +
   geom_point(aes(x = closed_t, y = bug_id), col = "red", size = 1, data = . %>% filter(closed), alpha = 0.25) +
-  scale_x_datetime(date_breaks = "1 year", date_labels = "%Y")
+  scale_x_datetime(date_breaks = "1 year", date_labels = "%Y") +
+  labs(x = element_blank(), y = "Bug", title = "Opening and closing bugs")
 ```
 
-We can observe the rist of bug reports and the closing efforts. 
-On mid 2014 there was some effort to close issues, and a big effort to close old issues on 2015-2016. 
-More recently the effect of ["R Can Use Your Help: Reviewing Bug Reports"](https://developer.r-project.org/Blog/public/2019/10/09/r-can-use-your-help-reviewing-bug-reports/index.html) is also appreciable but the closing effort seems more organic as it spans almost all 2020 closing old bug reports. 
+We can observe the rise of bug reports and the closing efforts.
+On mid 2014 there was some effort to close issues, and a big effort to close old issues on 2015-2016.
+More recently the effect of ["R Can Use Your Help: Reviewing Bug Reports"](https://developer.r-project.org/Blog/public/2019/10/09/r-can-use-your-help-reviewing-bug-reports/index.html) is also appreciable but the closing effort seems more organic as it spans almost all 2020 closing old bug reports and it is not focused on a short span of time.
 
 ```{r bug-closed-month}
 closing_time %>%   
@@ -540,7 +612,7 @@ db_bugs4 %>%
        title = "Median time till closing the issue")
 ```
 
-Usually it takes some time to close a bug report as duplicate. 
+Usually it takes some time to close a bug report as duplicate.
 Maybe this is because one needs some familiarity with the previous reported bugs.
 
 Which bugs are harder to close or need more information?
@@ -562,16 +634,19 @@ db_bugs4 %>%
 ```
 
 Bugs without resolution described as major are more time open, presumably because they take more time to fix too.
-Next are enhancements, which makes sense that enhancements take some time till they are incorporated to R source code. 
-Perhaps is the effect of the recent call to help on Bugzilla but the normal bug reports seem to be the ones less time open. 
+Next are enhancements, which makes sense that enhancements take some time till they are incorporated to R source code.
+Perhaps is the effect of the recent call to help on Bugzilla but the normal bug reports seem to be the ones less time open.
 
-# Conclusion 
+# Conclusion
 
 ```{r disconnect, include=FALSE}
 dbDisconnect(db_bugzilla)
 ```
 
-
-There is room for improvements on the bug reporting process from users:
-- Include a patch
-- Give details of the kind of the bug or at least not always using the default options of the tracker. 
+There is room for improvements on the bug reporting process from users: 
+ - Include some efforts to trace the origin of the bug report. 
+ - Include a patch whenever possible or some suggestions how you think the bug could be fixed.
+ - Give details of the kind of the bug or at least not always using the default options of the tracker.
+ 
+Also some advice to bug reporters:
+ - Don't expect a fast comment if the issue is complicated.
