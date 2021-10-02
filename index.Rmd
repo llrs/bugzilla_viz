@@ -24,33 +24,23 @@ The goal of this analysis is to identify good practices (or lack of them) to hel
 
 ```{r connection, include=FALSE}
 library("dbplyr")
-library("RSQLite")
-library("RMySQL")
-# Connecting R with MySQL
-db_bugzilla <- dbConnect(RMySQL::MySQL(), dbname = "rbugs", user = "tester",
-                 password = "password-Tester1!",
-                 host = "127.0.0.1")
-```
-
-```{r setup-db}
-library("dbplyr")
 library("dplyr")
 library("RSQLite")
 library("RMySQL")
-DBI::dbListTables(db_bugzilla)
-```
-
-First an initial exploration of the database and bug reports:
-
-```{r setup-viz}
 library("ggplot2")
 library("patchwork")
 library("ggpattern") # from github: coolbutuseless/ggpattern
 library("forcats")
 theme_set(theme_minimal())
+# Connecting R with MySQL
+db_bugzilla <- dbConnect(RMySQL::MySQL(), dbname = "rbugs", user = "tester",
+                 password = "password-Tester1!",
+                 host = "127.0.0.1")
+DBI::dbListTables(db_bugzilla)
 ```
 
-Building on the [previous analysis](https://llrs.github.io/bugzilla_viz/bugRzilla_review.html) we convert some columns to dates:
+
+First an initial exploration of the database and bug reports building on the [previous analysis](https://llrs.github.io/bugzilla_viz/bugRzilla_review.html) we convert some columns to dates:
 
 ```{r first-plot}
 library("lubridate")
@@ -71,11 +61,11 @@ There are also three points that do not follow the general expectations[^1].
 
 # Exploring outliers
 
+These three odd bug reports that are not consistent with the path position and numbering of the other bug reports need some exploration.
+
 ```{r special-bugs}
 special_bugs <- c(1, 1261, 1605)
 ```
-
-These three odd bug reports that are not consistent with the path position and numbering of the other bug reports need some exploration.
 
 Not clear what happens on [1261](https://bugs.r-project.org/show_bug.cgi?id=1261) or [1605](https://bugs.r-project.org/show_bug.cgi?id=1605), as there isn't anything that provides a clue on what could have happened. 
 
@@ -363,7 +353,7 @@ attachment_time %>%
   knitr::kable(col.names = c("Attachment on  opening", "Bugs", "%"), align = "c")
 ```
 
-Bugs with attachments on opening are almost 50% and when not on opening there is an attachment in around `r`attachment_in\` hours.
+Bugs with attachments on opening are almost 50% and when not on opening there is an attachment in around `r round(attachment_in, 2)` hours.
 
 Exploring some issues like [7022](https://bugs.r-project.org/show_bug.cgi?id=7022) it seems that changes on tagging and notes is posted as comments.
 If we want to look at comments and time between changes this will distort the results, even more, we want to improve bug reports for Bugzilla not jitterbug.
