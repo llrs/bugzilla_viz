@@ -192,6 +192,7 @@ On 2010 it seems that minor and trivial issues were started to be reported.
 component_names <- c("2" = "Accuracy", 
                      "3" = "Analyses",
                      "4" = "Graphics",
+                     "5" = "Installation",
                      "6" = "Low-level", 
                      "8" = "S4methods", 
                      "7" = "Misc",
