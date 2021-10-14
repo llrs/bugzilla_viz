@@ -39,7 +39,6 @@ db_bugzilla <- dbConnect(RMySQL::MySQL(), dbname = "rbugs", user = "tester",
 DBI::dbListTables(db_bugzilla)
 ```
 
-
 First an initial exploration of the database and bug reports building on the [previous analysis](https://llrs.github.io/bugzilla_viz/bugRzilla_review.html) we convert some columns to dates:
 
 ```{r first-plot}
@@ -67,12 +66,12 @@ These three odd bug reports that are not consistent with the path position and n
 special_bugs <- c(1, 1261, 1605)
 ```
 
-Not clear what happens on [1261](https://bugs.r-project.org/show_bug.cgi?id=1261) or [1605](https://bugs.r-project.org/show_bug.cgi?id=1605), as there isn't anything that provides a clue on what could have happened. 
+Not clear what happens on [1261](https://bugs.r-project.org/show_bug.cgi?id=1261) or [1605](https://bugs.r-project.org/show_bug.cgi?id=1605), as there isn't anything that provides a clue on what could have happened.
 
-However, if we look at the [first bug report](https://bugs.r-project.org/show_bug.cgi?id=1) on the website  you'll realize the first bug is testing Bugzilla!
-That first bug was made on 2010, in addition some bugs with later id have earlier creation date and even some without any submission date. 
+However, if we look at the [first bug report](https://bugs.r-project.org/show_bug.cgi?id=1) on the website you'll realize the first bug is testing Bugzilla!
+That first bug was made on 2010, in addition some bugs with later id have earlier creation date and even some without any submission date.
 
-Perhaps these bugs were reported by some account with different characteristics. 
+Perhaps these bugs were reported by some account with different characteristics.
 If we check who has been reporting the bugs we see this top users reporting bugs:
 
 ```{r bug-reporter}
@@ -127,7 +126,8 @@ db_bugs3 %>%
   labs(x = "Severity", y = "Status", fill = "Bugs")
 ```
 
-The information about the resolution and status of bugs on Jitterbug is missing from the database. (There is some reports of changes on the comments though) 
+The information about the resolution and status of bugs on Jitterbug is missing from the database.
+(There is some reports of changes on the comments though)
 
 ```{r real-bugs-bugzilla}
 db_bugs4 <- db_bugs3 %>% 
@@ -164,7 +164,8 @@ first_time(db_bugs3, bug_status) %>%
   knitr::kable(align = "c", col.names = c("Bug", "Status", "First report", "Total bugs"))
 ```
 
-Surprisingly the CONFIRMED and RESOLVED status wasn't used until 2015. I've heard that this was added relatively lately by one R core member.
+Surprisingly the CONFIRMED and RESOLVED status wasn't used until 2015.
+I've heard that this was added relatively lately by one R core member.
 
 ```{r}
 first_time(db_bugs3, resolution) %>% 
@@ -179,14 +180,15 @@ first_time(db_bugs3, version) %>%
   knitr::kable(align = "c", col.names = c("Version", "Bug", "First report", "Total bugs"))
 ```
 
-Some bugs reports of previous versions (not sure if version-specific) happen later than on new versions. Probably is people using previous version that report problems they found. 
+Some bugs reports of previous versions (not sure if version-specific) happen later than on new versions.
+Probably is people using previous version that report problems they found.
 
 ```{r}
 first_time(db_bugs3, bug_severity) %>% 
   knitr::kable(align = "c", col.names = c("Severity", "Bug", "First report", "Total bugs"))
 ```
 
-On 2010 it seems that minor and trivial issues were started to be reported. 
+On 2010 it seems that minor and trivial issues were started to be reported.
 
 ```{r}
 component_names <- c("2" = "Accuracy", 
@@ -213,7 +215,7 @@ first_time(db_bugs3, component_id) %>%
   knitr::kable(align = "c", col.names = c("Component", "Bug", "First report", "Total bugs"))
 ```
 
-There seems to be interest on translations since 2005, quite early on the development of R. 
+There seems to be interest on translations since 2005, quite early on the development of R.
 
 ```{r}
 first_time(db_bugs3, rep_platform) %>% 
@@ -227,11 +229,12 @@ first_time(db_bugs3, op_sys) %>%
   knitr::kable(align = "c", col.names = c("OS", "Bug", "First report", "Total bugs"))
 ```
 
-Multiple issues on each component, many are reported on Windows and some are reported for all OS. 
+Multiple issues on each component, many are reported on Windows and some are reported for all OS.
 
 # Spam
 
-As seen there are some bugs classified as APM. This was a new resolution on Bugzilla. 
+As seen there are some bugs classified as APM.
+This was a new resolution on Bugzilla.
 In order to explore this we can check out the missing issues (bug ids that are not present but that later ids are) and spam to see what happened:
 
 ```{r missing}
@@ -264,7 +267,6 @@ Given all that we will omit the spam bugs from now on.
 They are not really bug reports nor report or have something of quality to learn from them.
 
 # Attachments
-
 
 If we look at the attachments we might get some information about the kind of patches, packages, or reproducible examples that are provided.
 
@@ -501,7 +503,7 @@ db_activity2 %>%
   knitr::kable(col.names = c("OS", "Bugs"))
 ```
 
-And OS changes are to make it either more specific or more frequently more general. 
+And OS changes are to make it either more specific or more frequently more general.
 
 ```{r changed-hardwae}
 db_activity2 %>% 
@@ -514,8 +516,8 @@ db_activity2 %>%
 
 Hardware changes seems to be the report more general.
 
-However, as seen the numbers of these changes are quite low. 
-The highest are the status, resolution and adding someone to the list of CC. 
+However, as seen the numbers of these changes are quite low.
+The highest are the status, resolution and adding someone to the list of CC.
 This usually happens when someone comments.
 So how many comments are on issues?
 
@@ -570,7 +572,7 @@ f <- fgsea::fgsea(pathways = list("R core"= as.character(r_core)), stats = w2,
 fgsea::plotEnrichment(r_core, stats = w2) + labs(title = "R core commenters")
 ```
 
-The users that comment most are from the R core. 
+The users that comment most are from the R core.
 We can see when did they comment for the first time and how much do have they commented.
 
 ```{r}
@@ -585,9 +587,10 @@ db_comments %>%
   knitr::kable(col.names = c("First comment", "Last comment", "Bugs id commented"))
 ```
 
-Looking at when they first commented on a bug, and last and how many bugs they did reply, we can see that there are some members that are very involved on replying issues. [^2].
+Looking at when they first commented on a bug, and last and how many bugs they did reply, we can see that there are some members that are very involved on replying issues.
+[^2].
 
-[^2]: Note that this is only based on Bugzilla, and activity on Jitterbug might have been different. 
+[^2]: Note that this is only based on Bugzilla, and activity on Jitterbug might have been different.
 
 ```{r comments-core}
 db_comments %>% 
@@ -631,8 +634,10 @@ db_comments %>%
 ```
 
 As expected the R core has yet to comment on NEW bug reports.
-There seems to be also less comments from them on the Unconfirmed status. Probably they haven't had time or couldn't replicate the issue reported.  
-The next group that has low percentage of comments from the R core are the wontfix but resolved issues. This indicates that these issues are closed without providing an explanation about why they won't be fixed.
+There seems to be also less comments from them on the Unconfirmed status.
+Probably they haven't had time or couldn't replicate the issue reported.\
+The next group that has low percentage of comments from the R core are the wontfix but resolved issues.
+This indicates that these issues are closed without providing an explanation about why they won't be fixed.
 
 ```{r comments-speed}
 comments_time <- db_comments %>% 
@@ -668,7 +673,7 @@ comments_time %>%
                col.names = c("Comment number", "Time (hours)", "Sd time (hours)", "Bugs"))
 ```
 
-The first comment of an issue is usually quite fast but there are many bugs that their first comment is around a year later. 
+The first comment of an issue is usually quite fast but there are many bugs that their first comment is around a year later.
 
 If we exclude replies from the same user that reported the issue the time are higher:
 
@@ -701,8 +706,8 @@ comments_time %>%
   geom_abline(slope = 1, intercept = 0, col = "red")
 ```
 
-Comments on bugs are usually from a small number of authors. 
-But often they exchange around 10 comments. 
+Comments on bugs are usually from a small number of authors.
+But often they exchange around 10 comments.
 
 # Closing bug reports
 
@@ -810,10 +815,14 @@ Perhaps is the effect of the recent call to help on Bugzilla but the normal bug 
 dbDisconnect(db_bugzilla)
 ```
 
-There is room for improvements on the bug reporting process from users: 
- - Include some efforts to trace the origin of the bug report. 
- - Include a patch whenever possible or some suggestions how you think the bug could be fixed.
- - Give details of the kind of the bug or at least not always using the default options of the tracker.
- 
+There is room for improvements on the bug reporting process from users:
+
+-   Include some efforts to trace the origin of the bug report.
+
+-   Include a patch whenever possible or some suggestions how you think the bug could be fixed.
+
+-   Give details of the kind of the bug or at least not always using the default options of the tracker.
+
 Also some advice to bug reporters:
- - Don't expect a fast comment if the issue is complicated.
+
+-   Don't expect a fast comment if the issue is complicated.
