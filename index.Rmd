@@ -711,7 +711,7 @@ But often they exchange around 10 comments.
 
 # R contributors
 
-So the question is who is contributing so much. Who are the most contributing users and how are they contributing? I'll focus on the last 3 years (before the acquisition of data)
+So the question is who is contributing so much. Who are the most contributing users and how are they contributing? I'll focus on the last 3 years (before the database dump)
 
 ```{r contributors}
 opener <- db_bugs4 |> 
@@ -726,16 +726,32 @@ attacher <- db_attachments_bugs |>
     select(bug_id, time = creation_ts.at, user = submitter_id) |> 
     mutate(action = "attach")
 
-history <- rbind(opener, commenter, attacher)
+db_activity_bugs <- db_activity2 |> 
+  merge(db_bugs4, by = "bug_id", all.y = TRUE)
+
+status <- db_activity_bugs |> 
+    select(bug_id,  time = bug_when, user = who, field, added) |> 
+    filter(field == "Status") |> 
+    select(-field, action = added) |> 
+    filter(action != "NEW")
+
 # Select last 3 years of data
-begin <- max(history$time, na.rm = TRUE) - lubridate::years(3)
+begin <- max(opener$time, na.rm = TRUE) - lubridate::years(3)
+history <- rbind(opener, commenter, attacher, status) |> 
+    arrange(bug_id, time) |> 
+    filter(time >= begin)
+
+# Keep only bugs opened on the last 3 years (not comments before them and so on)
+# history <- history[min(which(history$action == "open")):nrow(history), ]
+# Commented to keep all actions even on older bugs
 
 # all actions including on their own reports
 actions_users <- history |> 
-    filter(time >= begin) |> 
+    filter(action %in% c("open", "comment", "attach")) |> 
     group_by(user) |> 
     count(action, sort = TRUE) |> 
-    tidyr::pivot_wider(names_from = action, values_from = n) |> 
+    tidyr::pivot_wider(names_from = action, values_from = n,
+                       values_fill = 0) |> 
     arrange(user) |> 
     mutate(all_comment = ifelse(is.na(comment), 0, comment),
            all_attach = ifelse(is.na(attach), 0, attach),
@@ -746,7 +762,6 @@ actions_users <- history |>
 
 # Actions on other issues (except opening)
 act_o <- history |> 
-    filter(time >= begin) |> 
     group_by(user) |> 
     summarize(comment = sum(action == "comment" & !bug_id %in% bug_id[action == "open"], na.rm = TRUE),
               attach = sum(action == "attach" & !bug_id %in% bug_id[action == "open"], na.rm = TRUE),
@@ -756,32 +771,148 @@ act_o <- history |>
            user = as.character(user))
 ```
 
+We can look at the list of people that open more bugs, comment on other issues and attach files on other issues:
 
-```{r contributors_plots}
+```{r contributors_list}
 m <- merge(actions_users, act_o) |> 
     mutate(self_comments = all_comment - comment,
            self_attach = all_attach - attach)
+active_users <- m |> filter(r_core == "no") |> 
+    rowwise() |> 
+    mutate(actions = sum(comment, attach, open)) |> 
+    ungroup() |> 
+    arrange(-actions) 
+ids <- as.numeric(active_users$user[1:30])
 
-ggplot(act_o) + 
-    geom_count(aes(open, comment, col = attach, shape = r_core)) + 
+library("bugRzilla") # Still experimental
+bugRzilla:::use_key() 
+gu <- get_user(ids = as.numeric(ids), host = "https://rbugs-devel.urbanek.info/")
+active_users_merged <- merge(gu[, 1:2], active_users, 
+                             by.x = "id", by.y = "user", 
+                             all.x = TRUE, all.y = FALSE) |> 
+    select(-r_core, -self_comments, -self_attach) |> 
+    arrange(-actions) |> 
+    mutate(real_name = ifelse(real_name == "", NA_character_, real_name))
+active_users_merged |> 
+    mutate(real_name = if_else(is.na(real_name), "", real_name)) |> 
+    knitr::kable(
+        col.names = c("ID", "Name", "All comments", "All attachments",
+                      "Comments", "Attachments", "Submission", "Actions"))
+```
+
+Actions is the number of actions on others submitters bugs attachments and comments (columns comment and attach) and the number of open bugs reported.
+Sebastian Meyer who has recently become a R core member is on the top of the  list by number of actions and attachments provided to bugs not open by him. 
+
+```{r contributors_plots}
+library("ggrepel")
+p <- ggplot(act_o) + 
+    geom_count(aes(open, comment, col = attach, shape = r_core)) +
     scale_size(range = c(2, 6), trans = "log10") +
     labs(x = "Bug reports opened", y = "Comments", shape = "R core?",
          size = "Users", title = "Contributions", subtitle = "Attachments and comments to other's bug reports", col = "Attachments") +
     scale_color_viridis_c(direction = -1)
+p
 ```
 
 We can see that the R core members contribute a lot with many comments as previously explored.
 There is also a group of people consistently opening many bugs, and some users not in the R core contributing with many attachments.
 
+If we check with the list above we can see these contributors activity:
+
+```{r, warning=FALSE}
+p +     
+    geom_text_repel(aes(open, comment, label = real_name), 
+                    data = active_users_merged) +
+    scale_y_log10()
+```
+
+Note that this plot is on log10 scale on the y axis. 
+
+I also received the question about how often bug submitters stay engaged *after* receiving a comment (or a patch).
+
+```{r users_engaged}
+user_engaged <- history |> 
+    group_by(bug_id) |> 
+    arrange(time) |> 
+    summarize(opener = user[action == "open"],
+        other_comments = any(opener != user & action == "comment"),
+        r_core = any(r_core %in% user[user != opener]),
+        # engaged = sum(user == opener & action != "open") > 1,
+        when_o = min(which(!user[-c(1:2)] %in% opener)), # Skiping opening and first comment
+        when_u = min(which(user[-c(1:2)] %in% opener)),
+        when_u = ifelse(is.infinite(when_u), 0, when_u),
+        when_s = min(which(action %in% c("ASSIGNED", "CLOSED"))-2),
+        when_s = ifelse(is.infinite(when_s), 0, when_s),
+        engaged = when_o < when_u,
+        handled = when_s == when_o + 1
+        ) |> 
+    filter(other_comments) |> 
+    ungroup()
+user_engaged |> 
+    count(engaged, name = "bugs") |> 
+    mutate(engaged = ifelse(engaged, "yes", "no")) |> 
+    knitr::kable()
+```
+
+It seems that on most the bugs opened the submitter does not engage when they receive some feedback. 
+This could be because the bug is fixed, bug  [17393](https://bugs.r-project.org/show_bug.cgi?id=17393), or closed directly without fixing it, bug [17265](https://bugs.r-project.org/show_bug.cgi?id=17265), or because the user doesn't reply to questions or feedback if asked ( [16441](https://bugs.r-project.org/show_bug.cgi?id=16441) ). 
+
+If we look at if after a new comment outside the original poster it is closed we can see better what happens
+
+```{r engaged_handled}
+user_engaged |> 
+    filter(!engaged) |> 
+    count(handled, name = "bugs") |> 
+    mutate(handled = ifelse(handled, "yes", "no")) |> 
+    knitr::kable()
+```
+
+Most bug reports where users are not engaged (do not reply to comments) is due to it being handled (closed or assigned) on that comment.
+
+```{r mixed_engagement, include=FALSE}
+ue <- user_engaged |> 
+    group_by(opener) |> 
+    count(engaged, handled, name = "bugs", sort = TRUE) |> 
+    summarize(engaged_p = bugs[engaged]/sum(bugs), 
+              handled_p = max(bugs[handled], 0)/sum(bugs),
+              bugs = sum(bugs)) |> 
+    ungroup()
+ue |> 
+    count(handled_p, engaged_p, bugs, name = "users") |> 
+    select(users, bugs, handled_p, engaged_p) |> 
+    mutate(handled_p = scales::percent(handled_p), 
+           engaged_p = scales::percent(engaged_p)) |> 
+    knitr::kable(digits = 3, col.names = c("Users", "Bugs", "Handled %", "Engaged %"))
+```
+
+We can make a table with the number of users that open the same number of bugs, some of which where handled (closed or assigned by those who can) and the percentage of said bugs that the original submitter stayed engaged on the bugs after someone else commented on their bugs.
+
+```{r mixed_engagement_plot}
+ue |> 
+    count(handled_p, engaged_p, bugs, name = "users") |> 
+    ggplot() + 
+    geom_point(aes(handled_p, engaged_p, size = users, col = bugs)) +
+    scale_x_continuous(labels = scales::label_percent(), limits = c(0, 1), 
+                       expand = expansion(add = 0.05)) +
+    scale_y_continuous(labels = scales::label_percent(), limits = c(0, 1), 
+                       expand = expansion(add = 0.05)) +
+    scale_size(trans = "log10") +
+    scale_color_continuous(trans = "log10") +
+    labs(x = "Handled", y = "Engagement", 
+         title = "Engagement of users on their bugs", size = "Users", 
+         col = "Bugs")
+```
+
+On the above plot it shows the users who engaged on bug reports and if their bugs where handled. 
+Having more bugs handled seems to reduce users' engagement. 
+Probably users become more proficient submitting bugs reports (and/or patches) or could be also some effect of being more newer issues without time to engage. 
+
 # Closing bug reports
 
-One of the current tasks the R core does is closing and replying to issues.
+As seen closing issues might have some effect on users.
 Issues might get closed for a variety of reasons as we have seen, but maybe there is some hint to something bugRzilla could help:
 
 ```{r bug_status, warning=FALSE}
-db_activity_bugs <- db_activity2 |> 
-  merge(db_bugs4, by = "bug_id", all.y = TRUE)
-
 closing_time <- db_activity_bugs |> 
   group_by(bug_id) |> 
   summarize(
@@ -794,7 +925,7 @@ closing_time <- db_activity_bugs |>
 
 ggplot(closing_time) +
   geom_point(aes(x = creation_t, y = bug_id), col = "green", shape = 17, size = 1) +
-  geom_point(aes(x = closed_t, y = bug_id), col = "red", size = 1, data = . %>% filter(closed), alpha = 0.25) +
+  geom_point(aes(x = closed_t, y = bug_id), col = "red", size = 1, data = function(x){ filter(x, closed)}, alpha = 0.25) +
   scale_x_datetime(date_breaks = "1 year", date_labels = "%Y") +
   labs(x = element_blank(), y = "Bug", title = "Opening and closing bugs")
 ```
