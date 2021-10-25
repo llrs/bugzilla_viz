@@ -711,16 +711,23 @@ But often they exchange around 10 comments.
 
 # R contributors
 
-So the question is who is contributing so much. Who are the most contributing users and how are they contributing? I'll focus on the last 3 years (before the database dump)
+So the question is who is contributing so much. Who are the most contributing users and how are they contributing? I'll focus on bugs opened the last 3 years (before the database dump).
 
 ```{r contributors}
+begin <- max(db_bugs4$creation_ts, na.rm = TRUE) - lubridate::years(3)
+
 opener <- db_bugs4 |> 
     select(bug_id, time = creation_ts, user = reporter) |>
-    mutate(action = "open")
+    mutate(action = "open") |> 
+    filter(time >= begin)
+
 commenter <- db_comments |> 
+    filter(bug_id %in% opener$bug_id) |> 
     select(bug_id, time = bug_when, user = who) |> 
     mutate(action = "comment")
+
 attacher <- db_attachments_bugs |> 
+    filter(bug_id %in% opener$bug_id) |> 
     filter(!is.na(creation_ts.at),
            bug_id %in% db_bugs4$bug_id) |> 
     select(bug_id, time = creation_ts.at, user = submitter_id) |> 
@@ -730,13 +737,13 @@ db_activity_bugs <- db_activity2 |>
   merge(db_bugs4, by = "bug_id", all.y = TRUE)
 
 status <- db_activity_bugs |> 
+    filter(bug_id %in% opener$bug_id) |> 
     select(bug_id,  time = bug_when, user = who, field, added) |> 
     filter(field == "Status") |> 
     select(-field, action = added) |> 
     filter(action != "NEW")
 
 # Select last 3 years of data
-begin <- max(opener$time, na.rm = TRUE) - lubridate::years(3)
 history <- rbind(opener, commenter, attacher, status) |> 
     arrange(bug_id, time) |> 
     filter(time >= begin)
@@ -797,11 +804,11 @@ active_users_merged |>
     mutate(real_name = if_else(is.na(real_name), "", real_name)) |> 
     knitr::kable(
         col.names = c("ID", "Name", "All comments", "All attachments",
-                      "Comments", "Attachments", "Submission", "Actions"))
+                      "Comments", "Attachments", "Bugs", "Actions"))
 ```
 
 Actions is the number of actions on others submitters bugs attachments and comments (columns comment and attach) and the number of open bugs reported.
-Sebastian Meyer who has recently become a R core member is on the top of the  list by number of actions and attachments provided to bugs not open by him. 
+Sebastian Meyer who has recently become a R core member is on the top of the  list by number of actions and attachments provided to bugs not opened by him. 
 
 ```{r contributors_plots}
 library("ggrepel")
@@ -867,7 +874,7 @@ user_engaged |>
     knitr::kable()
 ```
 
-Most bug reports where users are not engaged (do not reply to comments) is due to it being handled (closed or assigned) on that comment.
+Most bug reports where users are not engaged (do not reply to comments) is due to it being handled (closed or assigned) on the first comment they receive.
 
 ```{r mixed_engagement, include=FALSE}
 ue <- user_engaged |> 
@@ -886,6 +893,7 @@ ue |>
 ```
 
 We can make a table with the number of users that open the same number of bugs, some of which where handled (closed or assigned by those who can) and the percentage of said bugs that the original submitter stayed engaged on the bugs after someone else commented on their bugs.
+With this table we can see if there is more engagement when the bug reports are not closed or assigned on the first comment. 
 
 ```{r mixed_engagement_plot}
 ue |> 
@@ -899,8 +907,9 @@ ue |>
     scale_size(trans = "log10") +
     scale_color_continuous(trans = "log10") +
     labs(x = "Handled", y = "Engagement", 
-         title = "Engagement of users on their bugs", size = "Users", 
-         col = "Bugs")
+         title = "Engagement of users on their bugs", 
+         subtitle = "And handling the bugs on the first comment.",
+         size = "Users", col = "Bugs")
 ```
 
 On the above plot it shows the users who engaged on bug reports and if their bugs where handled. 
