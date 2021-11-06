@@ -247,7 +247,8 @@ data.frame(bug = db_bugs2$creation_ts,
   filter(spam != 0) |> 
   ggplot() +
   geom_point(aes(bug, spam, color = reported_on, shape = reported_on)) +
-  geom_vline(xintercept = as_datetime("2016-07-10")) +
+  # Date from https://www.r-project.org/bugs.html +1 day of effect
+  geom_vline(xintercept = as_datetime("2016-07-10")) + 
   labs(title = "Battle against spam",
        y = "Missing bugs or SPAM",
        col = "Site",
@@ -772,7 +773,8 @@ act_o <- history |>
     group_by(user) |> 
     summarize(comment = sum(action == "comment" & !bug_id %in% bug_id[action == "open"], na.rm = TRUE),
               attach = sum(action == "attach" & !bug_id %in% bug_id[action == "open"], na.rm = TRUE),
-              open = sum(action == "open", na.rm = TRUE)) |> 
+              open = sum(action == "open", na.rm = TRUE),
+              bugs_interacted = n_distinct(bug_id)) |> 
     ungroup() |> 
     mutate(r_core = ifelse(user %in% r_core, "yes", "no"),
            user = as.character(user))
@@ -792,8 +794,9 @@ active_users <- m |> filter(r_core == "no") |>
 ids <- as.numeric(active_users$user[1:30])
 
 library("bugRzilla") # Still experimental
-bugRzilla:::use_key() 
-gu <- get_user(ids = as.numeric(ids), host = "https://rbugs-devel.urbanek.info/")
+bugRzilla:::use_key() # Using my personal key
+# gu <- get_user(ids = as.numeric(ids), host = "https://rbugs-devel.urbanek.info/")
+gu <- get_user(ids = as.numeric(ids))
 active_users_merged <- merge(gu[, 1:2], active_users, 
                              by.x = "id", by.y = "user", 
                              all.x = TRUE, all.y = FALSE) |> 
@@ -801,10 +804,11 @@ active_users_merged <- merge(gu[, 1:2], active_users,
     arrange(-actions) |> 
     mutate(real_name = ifelse(real_name == "", NA_character_, real_name))
 active_users_merged |> 
-    mutate(real_name = if_else(is.na(real_name), "", real_name)) |> 
-    knitr::kable(
-        col.names = c("ID", "Name", "All comments", "All attachments",
-                      "Comments", "Attachments", "Bugs", "Actions"))
+    DT::datatable(filter = 'top', rownames = FALSE,
+                  options = list(
+                      pageLength = 30, autoWidth = TRUE),
+                  colnames = c("ID", "Name", "All comments", "All attachments",
+                      "Comments", "Attachments", "Bugs opened", "Bugs interacted", "Actions"))
 ```
 
 Actions is the number of actions on others submitters bugs attachments and comments (columns comment and attach) and the number of open bugs reported.
@@ -990,7 +994,58 @@ db_bugs4 |>
 Usually it takes some time to close a bug report as duplicate.
 Maybe this is because one needs some familiarity with the previous reported bugs.
 
-Which bugs are harder to close or need more information?
+
+```{r time-resolution-severity-closed2}
+db_bugs4 |> 
+  merge(closing_time, by = "bug_id", all.x = TRUE, all.y = FALSE) |> 
+  filter(closed) |> 
+  mutate(component_id = component_names[as.character(component_id)]) |> 
+  group_by(op_sys, component_id) |> 
+  summarize(f = as.numeric(median(diff_t)),
+            cv = mean(diff_t)/sd(diff_t),
+            n = n(),
+            min = min(diff_t),
+            max = max(diff_t)) |> 
+  ungroup() |> 
+  filter(n > 5) |> 
+  ggplot() +
+  geom_tile(aes(forcats::fct_reorder2(op_sys, cv, -n), 
+                forcats::fct_reorder2(component_id, cv, -n),
+                fill = f)) +
+  scale_fill_viridis_c(trans = "log10") +
+  labs(y = "Component", x = "OS", fill = "h", 
+       title = "Median time till closing the issue", 
+       subtitle = "For components and OS with more than 5 bugs reports") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+It was suggested that by looking by component and OS a pattern might emerge, but it doesn't seem so. 
+To visualize a little bit better the dispersion on each category we can plot them as boxplots:
+
+```{r comp_os}
+comp_os <- db_bugs4 |> 
+  merge(closing_time, by = "bug_id", all.x = TRUE, all.y = FALSE) |> 
+  filter(closed) |> 
+  mutate(component_id = component_names[as.character(component_id)],
+         names = paste(component_id, op_sys, sep = "-"))
+comp_os |> 
+    count(op_sys, component_id, sort = TRUE) |> 
+    filter(n > 5) |> 
+    mutate(names = paste(component_id, op_sys, sep = "-"))
+comp_os |> 
+    ggplot() +
+    geom_boxplot(aes(x = as.numeric(diff_t), y = names, col = names))+
+    # theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_x_log10() +
+    geom_vline(xintercept = 0) +
+    guides(col = "none") +
+    labs(x = "Hours", x = element_blank(), title = "Time to closing by OS and component") +
+    scale_y_discrete(guide = guide_axis(n.dodge = 2))
+```
+
+Not clear if there is a pattern there.
+
+Looking at open bugs we can see this pattern of time:
 
 ```{r time-opened}
 db_bugs4 |> 
@@ -1011,6 +1066,22 @@ db_bugs4 |>
 Bugs without resolution described as major are more time open, presumably because they take more time to fix too.
 Next are enhancements, which makes sense that enhancements take some time till they are incorporated to R source code.
 Perhaps is the effect of the recent call to help on Bugzilla but the normal bug reports seem to be the ones less time open.
+
+```{r rate_speed}
+speed <- db_bugs4 |> 
+    arrange(bug_id) |> 
+    mutate(n = 1:n(),
+           days = difftime(creation_ts, min(creation_ts), units = "days"))
+ggplot(speed) +
+    geom_abline(intercept = 0, slope = 1, col = "red", linetype = 2) +
+    geom_smooth(aes(days, n), method = "lm", formula = y ~ 0 + x) +
+    geom_line(aes(days, n), size = 2) +
+    labs(x = "Days", y = "Bugs", title = "Submission rate")
+
+```
+
+It seems that bugs were open close to one a day (red dashed line), there was a slow down between 2014 and 2020, but it seems that the peace has now recovered and raised again. 
+Overall there is around `r round(coefficients(lm(n~0+days, data = speed)), 3)` bugs reported per day since 2010 (blue continuous line).
 
 # Conclusion
 
