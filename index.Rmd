@@ -841,7 +841,7 @@ Note that this plot is on log10 scale on the y axis.
 
 I also received the question about how often bug submitters stay engaged *after* receiving a comment (or a patch).
 
-```{r users_engaged}
+```{r users_engaged, warning=FALSE}
 user_engaged <- history |> 
     group_by(bug_id) |> 
     arrange(time) |> 
