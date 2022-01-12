@@ -1,4 +1,5 @@
 # From: contributors_plots chunk modified:
+library("ggtext")
 ggplot(act_o) +
     geom_point(aes(open, comment, col = attach, shape = r_core)) +
     labs(x = "Bug reports opened", y = "Comments", title = "Contributors") +
@@ -11,6 +12,6 @@ ggplot(act_o) +
     guides(fill = "none", shape = "none", col = "none") +
     theme(panel.background = element_rect(fill = "white", linetype = "blank"), # bg of the panel
           plot.background = element_rect(fill = "white", linetype = "blank"))
-
+ggsave(filename = "~/Downloads/R_contributors2_bg.png", width = 1500, height=500, units = "px", device = "png")
 
 
